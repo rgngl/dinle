@@ -6,7 +6,8 @@ AC_CONFIG_FILES([Makefile src/Makefile])
 
 dnl Programs
 dnl ---------------------------------------------------------------------------
-AC_PROG_CC
+AC_PROG_CC_C99
+AM_PROG_CC_C_O
 PKG_PROG_PKG_CONFIG
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
@@ -68,6 +69,8 @@ fi
 
 dnl Header/Library Checks
 dnl ---------------------------------------------------------------------------
+AC_CHECK_FUNCS(daemon fork)
+
 AC_CHECK_LIB(m,exp,DINLE_LIBS="$DINLE_LIBS -lm",)
 
 AC_CHECK_HEADERS(locale.h)

@@ -12,6 +12,8 @@ DIE=
 AM_VERSIONGREP="sed -e s/.*[^0-9\.]\([0-9]\.[0-9][0-9]*\).*/\1/"
 AC_VERSIONGREP="sed -e s/.*[^0-9\.]\([0-9]\.[0-9][0-9]\).*/\1/"
 VERSIONMKINT="sed -e s/[^0-9]//"
+NOCONFIGURE="no"
+
 if test -n "$AM_FORCE_VERSION"
 then
 	AM_VERSIONS="$AM_FORCE_VERSION"
