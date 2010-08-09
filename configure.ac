@@ -17,8 +17,8 @@ AC_SUBST(AM_CFLAGS,"")
 
 AC_SUBST(DINLED_LIBS)
 AC_SUBST(DINLED_CFLAGS)
-MPD_LIBS=""
-MPD_CFLAGS=""
+DINLE_LIBS=""
+DINLE_CFLAGS=""
 
 dnl OS Specific - Ripped of from MPD source
 dnl ---------------------------------------------------------------------------
@@ -26,7 +26,7 @@ AC_CANONICAL_HOST
 
 case "$host_os" in
 mingw32* | windows*)
-	MPD_LIBS="$MPD_LIBS -lws2_32"
+	DINLE_LIBS="$DINLE_LIBS -lws2_32"
 	;;
 esac
 
@@ -66,6 +66,24 @@ if test -z "$prefix" || test "x$prefix" = xNONE; then
 	done
 fi
 
+dnl Header/Library Checks
+dnl ---------------------------------------------------------------------------
+AC_CHECK_LIB(m,exp,DINLE_LIBS="$DINLE_LIBS -lm",)
+
+AC_CHECK_HEADERS(locale.h)
+
+dnl Argument checks
+dnl ---------------------------------------------------------------------------
+AC_ARG_ENABLE(id3,
+	AS_HELP_STRING([--disable-id3],
+		[disable id3 support (default: enable)]),,
+	enable_id3=yes)
+
+AC_ARG_ENABLE(sqlite,
+	AS_HELP_STRING([--enable-sqlite],
+		[enable support for the SQLite database]),,
+	[enable_sqlite=auto])
+
 dnl Mandatory Libraries
 dnl ---------------------------------------------------------------------------
 PKG_CHECK_MODULES([GLIB], [glib-2.0 >= 2.20 gthread-2.0],,
@@ -76,5 +94,29 @@ dnl ---------------------------------------------------------------------------
 if test x$enable_largefile != xno; then
 	AC_DEFINE([ENABLE_LARGEFILE], 1, [Define if large file support is enabled])
 fi
+
+dnl -------------------------------- libid3tag --------------------------------
+if test x$enable_id3 = xyes; then
+	PKG_CHECK_MODULES([ID3TAG], [id3tag],,
+		AC_CHECK_LIB(id3tag, id3_file_open,
+			[ID3TAG_LIBS="-lid3tag -lz" ID3TAG_CFLAGS=""],
+			enable_id3=no))
+fi
+
+if test x$enable_id3 = xyes; then
+	AC_DEFINE(HAVE_ID3TAG, 1, [Define to use id3tag])
+fi
+
+AM_CONDITIONAL(HAVE_ID3TAG, test x$enable_id3 = xyes)
+
+dnl ---------------------------------- sqlite ---------------------------------
+
+DINLE_AUTO_PKG(sqlite, SQLITE, [sqlite3],
+	[SQLite database support], [sqlite not found])
+if test x$enable_sqlite = xyes; then
+	AC_DEFINE([ENABLE_SQLITE], 1, [Define to enable sqlite database support])
+fi
+
+AM_CONDITIONAL(ENABLE_SQLITE, test x$enable_sqlite = xyes)
 
 AC_OUTPUT
