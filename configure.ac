@@ -122,4 +122,19 @@ fi
 
 AM_CONDITIONAL(ENABLE_SQLITE, test x$enable_sqlite = xyes)
 
+dnl ----------------------------------- GCC -----------------------------------
+if test x$GCC = xyes
+then
+	DINLE_CHECK_FLAG([-Wall])
+	DINLE_CHECK_FLAG([-Wextra])
+	DINLE_CHECK_FLAG([-Wno-deprecated-declarations])
+	DINLE_CHECK_FLAG([-Wmissing-prototypes])
+	DINLE_CHECK_FLAG([-Wshadow])
+	DINLE_CHECK_FLAG([-Wpointer-arith])
+	DINLE_CHECK_FLAG([-Wstrict-prototypes])
+	DINLE_CHECK_FLAG([-Wcast-qual])
+	DINLE_CHECK_FLAG([-Wwrite-strings])
+	DINLE_CHECK_FLAG([-pedantic])
+fi
+
 AC_OUTPUT
