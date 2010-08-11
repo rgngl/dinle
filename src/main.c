@@ -1,4 +1,5 @@
 #include "config.h"
+#include "dinle-config-manager.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -17,20 +18,23 @@
 
 #include <glib.h>
 
+#define CONFIG_FILE "dinled.conf"
+#define USER_CONFIG_DIR ".dinled"
+#define SYSTEM_CONFIG_DIR "/etc"
+
 GThread *main_task;
 GMainLoop *main_loop;
 
 static gboolean foreground = FALSE;
+static gchar *music_root = NULL;
+static gchar *config_file = NULL;
 
 static GOptionEntry entries[] =
 {
-    /*{ "repeats", 'r', 0, G_OPTION_ARG_INT, &repeats, "Average over N repetitions", "N" },*/
-    /*{ "max-size", 'm', 0, G_OPTION_ARG_INT, &max_size, "Test up to 2^M items", "M" },*/
-    /*{ "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Be verbose", NULL },*/
-    /*{ "beep", 'b', 0, G_OPTION_ARG_NONE, &beep, "Beep when done", NULL },*/
-    /*{ "rand", 0, 0, G_OPTION_ARG_NONE, &rand, "Randomize the data", NULL },*/
-    { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Stay in the foreground, do not daemonize", NULL},
-    { NULL }
+    { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Stay in the foreground, do not daemonize", NULL },
+    { "config-file", 'c', 0, G_OPTION_ARG_STRING, &config_file, "Configuration file to load.", "FILE" },
+    { "music-root", 'm', 0, G_OPTION_ARG_STRING, &music_root, "Root directory to search music, by passes configuration", "DIR" },
+    { NULL, }
 };
 
 int main(int argc, char** argv)
@@ -55,6 +59,7 @@ int main(int argc, char** argv)
 
     /* enable GLib's thread safety code */
     g_thread_init(NULL);
+    g_type_init();
 
     main_task = g_thread_self();
     main_loop = g_main_loop_new(NULL, FALSE);
@@ -66,6 +71,29 @@ int main(int argc, char** argv)
             abort();
         }
     }
+
+    g_object_ref (dinle_config_manager_get());
+
+    if (config_file)
+        dinle_config_manager_load_file (config_file);
+    else {
+        /* Try to load default config files here. */
+        gboolean config_loaded = FALSE;
+
+        config_loaded |= dinle_config_manager_load_file (SYSTEM_CONFIG_DIR "/" CONFIG_FILE);
+
+        const gchar *homedir = g_get_home_dir ();
+        gchar *cf = g_strconcat (homedir, "/", USER_CONFIG_DIR, "/", CONFIG_FILE, NULL);
+        config_loaded |= dinle_config_manager_load_file (cf);
+
+        if (!config_loaded) {
+            g_print ("No configuration found in default directories.\nUse one with the -c parameter.\n");
+            abort();
+        }
+    }
+
+    if (music_root)
+        fprintf(stderr, "%s\n", music_root);
 
     g_main_loop_run(main_loop);
 

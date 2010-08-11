@@ -87,9 +87,11 @@ AC_ARG_ENABLE(sqlite,
 		[enable support for the SQLite database]),,
 	[enable_sqlite=auto])
 
+AC_SYS_LARGEFILE
+
 dnl Mandatory Libraries
 dnl ---------------------------------------------------------------------------
-PKG_CHECK_MODULES([GLIB], [glib-2.0 >= 2.20 gthread-2.0],,
+PKG_CHECK_MODULES([GLIB], [glib-2.0 >= 2.20 gthread-2.0 gobject-2.0],,
 		[AC_MSG_ERROR([GLib 2.12 is required])])
 
 dnl LIBC Features
