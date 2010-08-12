@@ -1,5 +1,5 @@
 AC_INIT([dinle], [0.01], [ustun.ergenoglu@gmail.com])
-AM_INIT_AUTOMAKE([foreign -Wall -Werror])
+AM_INIT_AUTOMAKE([foreign -Werror])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile src/Makefile])
@@ -77,10 +77,10 @@ AC_CHECK_HEADERS(locale.h)
 
 dnl Argument checks
 dnl ---------------------------------------------------------------------------
-AC_ARG_ENABLE(id3,
-	AS_HELP_STRING([--disable-id3],
-		[disable id3 support (default: enable)]),,
-	enable_id3=yes)
+AC_ARG_ENABLE(mp3,
+	AS_HELP_STRING([--disable-mp3],
+		[disable mp3 support (default: enable)]),,
+	enable_mp3=yes)
 
 AC_ARG_ENABLE(sqlite,
 	AS_HELP_STRING([--enable-sqlite],
@@ -100,19 +100,20 @@ if test x$enable_largefile != xno; then
 	AC_DEFINE([ENABLE_LARGEFILE], 1, [Define if large file support is enabled])
 fi
 
-dnl -------------------------------- libid3tag --------------------------------
-if test x$enable_id3 = xyes; then
+dnl -------------------------------- mp3 support ------------------------------
+if test x$enable_mp3 = xyes; then
 	PKG_CHECK_MODULES([ID3TAG], [id3tag],,
 		AC_CHECK_LIB(id3tag, id3_file_open,
 			[ID3TAG_LIBS="-lid3tag -lz" ID3TAG_CFLAGS=""],
-			enable_id3=no))
+			enable_mp3=no))
+        PKG_CHECK_MODULES([MAD], [mad],, enable_mp3=no)
 fi
 
-if test x$enable_id3 = xyes; then
-	AC_DEFINE(HAVE_ID3TAG, 1, [Define to use id3tag])
+if test x$enable_mp3 = xyes; then
+        AC_DEFINE(HAVE_MP3, 1, [Define to use mp3])
 fi
 
-AM_CONDITIONAL(HAVE_ID3TAG, test x$enable_id3 = xyes)
+AM_CONDITIONAL(HAVE_MP3, test x$enable_mp3 = xyes)
 
 dnl ---------------------------------- sqlite ---------------------------------
 
