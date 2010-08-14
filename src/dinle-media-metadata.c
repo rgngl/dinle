@@ -122,6 +122,15 @@ dinle_media_metadata_dispose (GObject *object)
 static void
 dinle_media_metadata_finalize (GObject *object)
 {
+    g_return_if_fail (DINLE_IS_MEDIA_METADATA (object));
+
+    DinleMediaMetadataPrivate *priv = MEDIA_METADATA_PRIVATE (object);
+
+    g_free (priv->artist);
+    g_free (priv->album);
+    g_free (priv->title);
+    g_free (priv->genre);
+
     G_OBJECT_CLASS (dinle_media_metadata_parent_class)->finalize (object);
 }
 

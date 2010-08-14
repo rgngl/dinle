@@ -37,6 +37,7 @@ static const gchar * extensions = "mp3";
 /* virtual method overrides */
 
 static const gchar * _extensions (DinleMediaFile *self);
+static const DinleMediaMetadata * _get_metadata_file (DinleMediaFile *self, gchar *file);
 
 /*****************************************************************************/
 static void
@@ -90,6 +91,7 @@ dinle_media_file_mp3_class_init (DinleMediaFileMp3Class *klass)
     object_class->dispose = dinle_media_file_mp3_dispose;
     object_class->finalize = dinle_media_file_mp3_finalize;
     DINLE_MEDIA_FILE_CLASS(klass)->extensions = _extensions;
+    DINLE_MEDIA_FILE_CLASS(klass)->get_metadata_file = _get_metadata_file;
 }
 
 static void
@@ -108,4 +110,10 @@ static const gchar *
 _extensions (DinleMediaFile *self)
 {
     return extensions;
+}
+
+static const DinleMediaMetadata *
+_get_metadata_file (DinleMediaFile *self, gchar *file)
+{
+    DinleMediaMetadata *md = g_object_new (DINLE_TYPE_MEDIA_METADATA, NULL);
 }

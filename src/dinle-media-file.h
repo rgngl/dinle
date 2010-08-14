@@ -22,6 +22,8 @@
 
 #include <glib-object.h>
 
+#include "dinle-media-metadata.h"
+
 G_BEGIN_DECLS
 
 #define DINLE_TYPE_MEDIA_FILE dinle_media_file_get_type()
@@ -62,12 +64,15 @@ struct _DinleMediaFileClass
     GObjectClass parent_class;
 
     const gchar * (*extensions) (DinleMediaFile *);
+    const DinleMediaMetadata * const (*get_metadata_file) (DinleMediaFile *self, gchar *file);
 };
 
 GType dinle_media_file_get_type (void) G_GNUC_CONST;
 
 DinleMediaFile *dinle_media_file_new (void);
-const gchar *dinle_media_file_extensions(DinleMediaFile *);
+const gchar *dinle_media_file_extensions(DinleMediaFile *self);
+gboolean dinle_media_file_set (DinleMediaFile *self, const gchar *file);
+const DinleMediaMetadata * dinle_media_file_get_metadata (DinleMediaFile *self);
 
 G_END_DECLS
 

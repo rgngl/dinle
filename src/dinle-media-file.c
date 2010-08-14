@@ -26,7 +26,8 @@ G_DEFINE_TYPE (DinleMediaFile, dinle_media_file, G_TYPE_OBJECT)
 
 struct _DinleMediaFilePrivate
 {
-    int foo;
+    gchar *file;
+    DinleMediaMetadata *md;
 };
 
 
@@ -65,6 +66,13 @@ dinle_media_file_dispose (GObject *object)
 static void
 dinle_media_file_finalize (GObject *object)
 {
+    g_return_if_fail (DINLE_IS_MEDIA_FILE (object));
+    DinleMediaFilePrivate *priv = MEDIA_FILE_PRIVATE (object);
+
+    if (priv->md)
+        g_object_unref (priv->md);
+    g_free (priv->file);
+
     G_OBJECT_CLASS (dinle_media_file_parent_class)->finalize (object);
 }
 
@@ -80,12 +88,16 @@ dinle_media_file_class_init (DinleMediaFileClass *klass)
     object_class->dispose = dinle_media_file_dispose;
     object_class->finalize = dinle_media_file_finalize;
     klass->extensions = NULL;
+    klass->get_metadata_file = NULL;
 }
 
 static void
 dinle_media_file_init (DinleMediaFile *self)
 {
     self->priv = MEDIA_FILE_PRIVATE (self);
+
+    self->priv->md = NULL;
+    self->priv->file = NULL;
 }
 
 DinleMediaFile *
@@ -100,8 +112,37 @@ dinle_media_file_extensions(DinleMediaFile *self)
     g_return_val_if_fail (DINLE_IS_MEDIA_FILE (self), NULL);
 
     if (DINLE_MEDIA_FILE_GET_CLASS (self)->extensions) {
-        return (DINLE_MEDIA_FILE_GET_CLASS (self)->extensions)(self);;
+        return (DINLE_MEDIA_FILE_GET_CLASS (self)->extensions)(self);
     }
 
+    g_critical ("Pure virtual _extensions method called...\n");
+
+    return NULL;
+}
+
+gboolean
+dinle_media_file_set (DinleMediaFile *self, const gchar *file)
+{
+    g_return_val_if_fail (DINLE_IS_MEDIA_FILE (self), FALSE);
+    DinleMediaFilePrivate *priv = MEDIA_FILE_PRIVATE (self);
+
+    if (!g_file_test (file, G_FILE_TEST_EXISTS))
+        return FALSE;
+
+    priv->file = g_strdup (file);
+    return TRUE;
+}
+
+const DinleMediaMetadata *
+dinle_media_file_get_metadata (DinleMediaFile *self)
+{
+    g_return_val_if_fail (DINLE_IS_MEDIA_FILE (self), NULL);
+    DinleMediaFilePrivate *priv = MEDIA_FILE_PRIVATE (self);
+
+    if (DINLE_MEDIA_FILE_GET_CLASS (self)->get_metadata_file) {
+        return (DINLE_MEDIA_FILE_GET_CLASS (self)->get_metadata_file)(self, priv->file);
+    }
+
+    g_critical ("Pure virtual class get_metadata method called.\n");
     return NULL;
 }
