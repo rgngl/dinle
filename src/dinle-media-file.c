@@ -1,4 +1,4 @@
-/*  
+/*
     This file is part of Dinle.
     Copyright 2010  Üstün Ergenoglu
 

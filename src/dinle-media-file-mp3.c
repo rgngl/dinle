@@ -1,4 +1,4 @@
-/*  
+/*
     This file is part of Dinle.
     Copyright 2010  Üstün Ergenoglu
 
@@ -18,6 +18,8 @@
 /* dinle-media-file-mp3.c */
 
 #include "dinle-media-file-mp3.h"
+
+#include <id3tag.h>
 
 G_DEFINE_TYPE (DinleMediaFileMp3, dinle_media_file_mp3, DINLE_TYPE_MEDIA_FILE)
 

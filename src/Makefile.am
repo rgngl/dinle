@@ -11,11 +11,13 @@ dinled_LDADD = $(DINLE_LIBS) \
 dinled_SOURCES = main.c \
 		 dinle-archive-manager.c \
 		 dinle-config-manager.c \
-		 dinle-media-file.c
+		 dinle-media-file.c \
+		 dinle-media-metadata.c
 
 dinled_headers = dinle-archive-manager.h \
 		 dinle-config-manager.h \
-		 dinle-media-file.h 
+		 dinle-media-file.h \
+		 dinle-media-metadata.h
 if HAVE_MP3
 dinled_SOURCES += dinle-media-file-mp3.c
 dinled_headers += dinle-media-file-mp3.h

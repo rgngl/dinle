@@ -1,4 +1,4 @@
-/*  
+/*
     This file is part of Dinle.
     Copyright 2010  Üstün Ergenoglu
 
@@ -91,22 +91,23 @@ int main(int argc, char** argv)
 
     g_object_ref (dinle_config_manager_get ());
 
+    gboolean config_loaded = FALSE;
     if (config_file)
-        dinle_config_manager_load_file (config_file);
+        config_loaded |= dinle_config_manager_load_file (config_file);
     else {
         /* Try to load default config files here. */
-        gboolean config_loaded = FALSE;
 
         config_loaded |= dinle_config_manager_load_file (SYSTEM_CONFIG_DIR "/" CONFIG_FILE);
 
         const gchar *homedir = g_get_home_dir ();
         gchar *cf = g_strconcat (homedir, "/", USER_CONFIG_DIR, "/", CONFIG_FILE, NULL);
         config_loaded |= dinle_config_manager_load_file (cf);
+        g_free (cf);
 
-        if (!config_loaded) {
-            g_print ("No configuration found in default directories.\nUse one with the -c parameter.\n");
-            abort();
-        }
+    }
+    if (!config_loaded) {
+        g_print ("No configuration found in default directories.\nUse one with the -c parameter.\n");
+        abort();
     }
 
     g_object_ref (dinle_archive_manager_get ());
