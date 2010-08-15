@@ -115,5 +115,127 @@ _extensions (DinleMediaFile *self)
 static const DinleMediaMetadata *
 _get_metadata_file (DinleMediaFile *self, gchar *file)
 {
-    DinleMediaMetadata *md = g_object_new (DINLE_TYPE_MEDIA_METADATA, NULL);
+    id3_utf8_t *title = NULL;
+    id3_utf8_t *artist = NULL;
+    id3_utf8_t *album = NULL;
+    id3_utf8_t *genre = NULL;
+    id3_utf8_t *year = NULL;
+    id3_utf8_t *track = NULL;
+    id3_utf8_t *length = NULL;
+
+    struct id3_file *tagfile = id3_file_open (file, ID3_FILE_MODE_READONLY);
+    const struct id3_tag *tag = id3_file_tag (tagfile);
+    struct id3_frame *frame = id3_tag_findframe (tag, ID3_FRAME_TITLE, 0);
+    if (frame) {
+        union id3_field const *field;
+        unsigned int nstrings;
+
+        field    = id3_frame_field(frame, 1);
+        nstrings = id3_field_getnstrings(field);
+
+        const id3_ucs4_t *str = id3_field_getstrings(field, 0);
+        title = id3_ucs4_utf8duplicate (str);
+        g_print ("title: %s\n", title);
+    }
+
+    frame = id3_tag_findframe (tag, ID3_FRAME_ARTIST, 0);
+    if (frame) {
+        union id3_field const *field;
+        unsigned int nstrings;
+
+        field    = id3_frame_field(frame, 1);
+        nstrings = id3_field_getnstrings(field);
+
+        const id3_ucs4_t *str = id3_field_getstrings(field, 0);
+        artist = id3_ucs4_utf8duplicate (str);
+        g_print ("artist: %s\n", artist);
+    }
+
+    frame = id3_tag_findframe (tag, ID3_FRAME_ALBUM, 0);
+    if (frame) {
+        union id3_field const *field;
+        unsigned int nstrings;
+
+        field    = id3_frame_field(frame, 1);
+        nstrings = id3_field_getnstrings(field);
+
+        const id3_ucs4_t *str = id3_field_getstrings(field, 0);
+        album = id3_ucs4_utf8duplicate (str);
+        g_print ("album: %s\n", album);
+    }
+
+    frame = id3_tag_findframe (tag, ID3_FRAME_GENRE, 0);
+    if (frame) {
+        union id3_field const *field;
+        unsigned int nstrings;
+
+        field    = id3_frame_field(frame, 1);
+        nstrings = id3_field_getnstrings(field);
+
+        const id3_ucs4_t *str = id3_field_getstrings(field, 0);
+        genre = id3_ucs4_utf8duplicate (str);
+        g_print ("genre: %s\n", genre);
+    }
+
+    frame = id3_tag_findframe (tag, ID3_FRAME_YEAR, 0);
+    if (frame) {
+        union id3_field const *field;
+        unsigned int nstrings;
+
+        field    = id3_frame_field(frame, 1);
+        nstrings = id3_field_getnstrings(field);
+
+        const id3_ucs4_t *str = id3_field_getstrings(field, 0);
+        year = id3_ucs4_utf8duplicate (str);
+        g_print ("year: %s\n", year);
+    }
+
+    frame = id3_tag_findframe (tag, ID3_FRAME_TRACK, 0);
+    if (frame) {
+        union id3_field const *field;
+        unsigned int nstrings;
+
+        field    = id3_frame_field(frame, 1);
+        nstrings = id3_field_getnstrings(field);
+
+        const id3_ucs4_t *str = id3_field_getstrings(field, 0);
+        track = id3_ucs4_utf8duplicate (str);
+        g_print ("track: %s\n", track);
+    }
+
+    frame = id3_tag_findframe (tag, "TLEN", 0);
+    if (frame) {
+        union id3_field const *field;
+        unsigned int nstrings;
+
+        field    = id3_frame_field(frame, 1);
+        nstrings = id3_field_getnstrings(field);
+
+        const id3_ucs4_t *str = id3_field_getstrings(field, 0);
+        length = id3_ucs4_utf8duplicate (str);
+        g_print ("length: %s\n", length);
+    }
+
+
+    id3_file_close (tagfile);
+
+    DinleMediaMetadata *md = g_object_new (DINLE_TYPE_MEDIA_METADATA,
+                                           "title", title,
+                                           "artist", artist,
+                                           "album", album,
+                                           "genre", genre,
+                                           "year", year,
+                                           "track", track,
+                                           "length", length,
+                                           NULL);
+
+    g_free (title);
+    g_free (album);
+    g_free (artist);
+    g_free (genre);
+    g_free (year);
+    g_free (track);
+    g_free (length);
+
+    return md;
 }

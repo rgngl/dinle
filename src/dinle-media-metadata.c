@@ -1,4 +1,4 @@
-/*  
+/*
     This file is part of Dinle.
     Copyright 2010  Üstün Ergenoglu
 
@@ -30,7 +30,9 @@ struct _DinleMediaMetadataPrivate
     gchar *album;
     gchar *title;
     gchar *genre;
-    guint length;
+    gchar *year;
+    gchar *track;
+    gchar *length;
 };
 
 enum {
@@ -41,6 +43,8 @@ enum {
     PROP_TITLE,
     PROP_GENRE,
     PROP_LENGTH,
+    PROP_YEAR,
+    PROP_TRACK,
 
     PROP_NUMBER
 };
@@ -70,7 +74,13 @@ dinle_media_metadata_get_property (GObject    *object,
             g_value_set_string (value, priv->genre);
             break;
         case PROP_LENGTH:
-            g_value_set_uint (value, priv->length);
+            g_value_set_string (value, priv->length);
+            break;
+        case PROP_YEAR:
+            g_value_set_string (value, priv->year);
+            break;
+        case PROP_TRACK:
+            g_value_set_string (value, priv->track);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -106,7 +116,16 @@ dinle_media_metadata_set_property (GObject      *object,
             priv->genre = g_value_dup_string (value);
             break;
         case PROP_LENGTH:
-            priv->length = g_value_get_uint (value);
+            g_free (priv->length);
+            priv->length = g_value_dup_string (value);
+            break;
+        case PROP_YEAR:
+            g_free (priv->year);
+            priv->year = g_value_dup_string (value);
+            break;
+        case PROP_TRACK:
+            g_free (priv->track);
+            priv->track = g_value_dup_string (value);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -130,6 +149,9 @@ dinle_media_metadata_finalize (GObject *object)
     g_free (priv->album);
     g_free (priv->title);
     g_free (priv->genre);
+    g_free (priv->year);
+    g_free (priv->length);
+    g_free (priv->track);
 
     G_OBJECT_CLASS (dinle_media_metadata_parent_class)->finalize (object);
 }
@@ -183,17 +205,32 @@ dinle_media_metadata_class_init (DinleMediaMetadataClass *klass)
             PROP_GENRE,
             pspec);
 
-    pspec = g_param_spec_uint ("length",
+    pspec = g_param_spec_string ("length",
             "Length",
-            "Length in seconds",
-            0,
-            G_MAXUINT,
-            0,
+            "Length in milliseconds",
+            NULL,
             G_PARAM_WRITABLE | G_PARAM_READABLE);
     g_object_class_install_property (object_class,
             PROP_LENGTH,
             pspec);
 
+    pspec = g_param_spec_string ("year",
+            "Year",
+            "Year",
+            NULL,
+            G_PARAM_WRITABLE | G_PARAM_READABLE);
+    g_object_class_install_property (object_class,
+            PROP_YEAR,
+            pspec);
+
+    pspec = g_param_spec_string ("track",
+            "Track",
+            "Track",
+            NULL,
+            G_PARAM_WRITABLE | G_PARAM_READABLE);
+    g_object_class_install_property (object_class,
+            PROP_TRACK,
+            pspec);
 }
 
 static void
@@ -205,7 +242,9 @@ dinle_media_metadata_init (DinleMediaMetadata *self)
     self->priv->album = NULL;
     self->priv->title = NULL;
     self->priv->genre = NULL;
-    self->priv->length = 0;
+    self->priv->length = NULL;
+    self->priv->track = NULL;
+    self->priv->year = NULL;
 }
 
 DinleMediaMetadata *
