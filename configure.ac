@@ -93,6 +93,8 @@ dnl Mandatory Libraries
 dnl ---------------------------------------------------------------------------
 PKG_CHECK_MODULES([GLIB], [glib-2.0 >= 2.20 gthread-2.0 gobject-2.0],,
 		[AC_MSG_ERROR([GLib 2.12 is required])])
+PKG_CHECK_MODULES([SQLITE], [sqlite3],,
+                [AC_MSG_ERROR([Sqlite is required])])
 
 dnl LIBC Features
 dnl ---------------------------------------------------------------------------
@@ -114,16 +116,6 @@ if test x$enable_mp3 = xyes; then
 fi
 
 AM_CONDITIONAL(HAVE_MP3, test x$enable_mp3 = xyes)
-
-dnl ---------------------------------- sqlite ---------------------------------
-
-DINLE_AUTO_PKG(sqlite, SQLITE, [sqlite3],
-	[SQLite database support], [sqlite not found])
-if test x$enable_sqlite = xyes; then
-	AC_DEFINE([ENABLE_SQLITE], 1, [Define to enable sqlite database support])
-fi
-
-AM_CONDITIONAL(ENABLE_SQLITE, test x$enable_sqlite = xyes)
 
 dnl ----------------------------------- GCC -----------------------------------
 if test x$GCC = xyes

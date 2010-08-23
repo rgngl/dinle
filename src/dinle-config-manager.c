@@ -28,18 +28,21 @@ G_DEFINE_TYPE (DinleConfigManager, dinle_config_manager, G_TYPE_OBJECT)
 
 #define BASIC_SETTINGS_GROUP "basic"
 #define MEDIA_ROOT_KEY "mediaroot"
+#define MEDIA_DB_KEY "mediadb"
 
 static DinleConfigManager *instance = NULL;
 
 struct _DinleConfigManagerPrivate
 {
     gchar *media_root;
+    gchar *media_db;
 };
 
 enum {
     PROP_0,
 
     PROP_MEDIA_ROOT,
+    PROP_MEDIA_DB,
 
     PROP_NUMBER
 };
@@ -98,6 +101,8 @@ dinle_config_manager_get_property (GObject    *object,
         case PROP_MEDIA_ROOT:
             g_value_set_string (value, priv->media_root);
             break;
+        case PROP_MEDIA_DB:
+            g_value_set_string (value, priv->media_db);
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
     }
@@ -150,6 +155,15 @@ dinle_config_manager_class_init (DinleConfigManagerClass *klass)
             PROP_MEDIA_ROOT,
             pspec);
 
+    pspec = g_param_spec_string ("media-db",
+            "Media Database",
+            "Database file for the media information",
+            NULL /* default value */,
+            G_PARAM_READABLE);
+    g_object_class_install_property (object_class,
+            PROP_MEDIA_DB,
+            pspec);
+
 }
 
 static void
@@ -158,6 +172,7 @@ dinle_config_manager_init (DinleConfigManager *self)
     self->priv = CONFIG_MANAGER_PRIVATE (self);
     
     self->priv->media_root = NULL;
+    self->priv->media_db = NULL;
 }
 
 static DinleConfigManager *
@@ -176,4 +191,12 @@ update_config(GKeyFile *kf)
         priv->media_root = mr;
         g_print("Media root is: %s\n", priv->media_root);
     }
+
+    gchar *mdb = g_key_file_get_string (kf, BASIC_SETTINGS_GROUP, MEDIA_DB_KEY, NULL);
+    if (mdb) {
+        priv->media_db = mdb;
+        g_print ("Media db is: %s\n", priv->media_db);
+    }
+    g_assert (mr);
+    g_assert (mdb);
 }

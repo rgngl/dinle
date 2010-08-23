@@ -32,7 +32,10 @@ struct _DinleMediaMetadataPrivate
     gchar *genre;
     gchar *year;
     gchar *track;
+    gchar *tracks;
     gchar *length;
+    gchar *discno;
+    gchar *discs;
 };
 
 enum {
@@ -45,6 +48,9 @@ enum {
     PROP_LENGTH,
     PROP_YEAR,
     PROP_TRACK,
+    PROP_TRACKS,
+    PROP_DISCNO,
+    PROP_DISCS,
 
     PROP_NUMBER
 };
@@ -81,6 +87,15 @@ dinle_media_metadata_get_property (GObject    *object,
             break;
         case PROP_TRACK:
             g_value_set_string (value, priv->track);
+            break;
+        case PROP_TRACKS:
+            g_value_set_string (value, priv->tracks);
+            break;
+        case PROP_DISCNO:
+            g_value_set_string (value, priv->discno);
+            break;
+        case PROP_DISCS:
+            g_value_set_string (value, priv->discs);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -127,6 +142,18 @@ dinle_media_metadata_set_property (GObject      *object,
             g_free (priv->track);
             priv->track = g_value_dup_string (value);
             break;
+        case PROP_TRACKS:
+            g_free (priv->tracks);
+            priv->tracks = g_value_dup_string (value);
+            break;
+        case PROP_DISCNO:
+            g_free (priv->discno);
+            priv->discno = g_value_dup_string (value);
+            break;
+        case PROP_DISCS:
+            g_free (priv->discs);
+            priv->discs = g_value_dup_string (value);
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
     }
@@ -152,6 +179,9 @@ dinle_media_metadata_finalize (GObject *object)
     g_free (priv->year);
     g_free (priv->length);
     g_free (priv->track);
+    g_free (priv->tracks);
+    g_free (priv->discs);
+    g_free (priv->discno);
 
     G_OBJECT_CLASS (dinle_media_metadata_parent_class)->finalize (object);
 }
@@ -231,6 +261,33 @@ dinle_media_metadata_class_init (DinleMediaMetadataClass *klass)
     g_object_class_install_property (object_class,
             PROP_TRACK,
             pspec);
+
+    pspec = g_param_spec_string ("tracks",
+            "Tracks",
+            "Number of Tracks",
+            NULL,
+            G_PARAM_WRITABLE | G_PARAM_READABLE);
+    g_object_class_install_property (object_class,
+            PROP_TRACKS,
+            pspec);
+
+    pspec = g_param_spec_string ("discno",
+            "Disc No",
+            "Disc No",
+            NULL,
+            G_PARAM_WRITABLE | G_PARAM_READABLE);
+    g_object_class_install_property (object_class,
+            PROP_DISCNO,
+            pspec);
+
+    pspec = g_param_spec_string ("discs",
+            "Discs",
+            "Discs",
+            NULL,
+            G_PARAM_WRITABLE | G_PARAM_READABLE);
+    g_object_class_install_property (object_class,
+            PROP_DISCS,
+            pspec);
 }
 
 static void
@@ -244,7 +301,10 @@ dinle_media_metadata_init (DinleMediaMetadata *self)
     self->priv->genre = NULL;
     self->priv->length = NULL;
     self->priv->track = NULL;
+    self->priv->tracks = NULL;
     self->priv->year = NULL;
+    self->priv->discs = NULL;
+    self->priv->discno = NULL;
 }
 
 DinleMediaMetadata *

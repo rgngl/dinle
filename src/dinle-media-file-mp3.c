@@ -121,7 +121,11 @@ _get_metadata_file (DinleMediaFile *self, gchar *file)
     id3_utf8_t *genre = NULL;
     id3_utf8_t *year = NULL;
     id3_utf8_t *track = NULL;
+    id3_utf8_t *tracks = NULL;
     id3_utf8_t *length = NULL;
+    id3_utf8_t *disc = NULL;
+    id3_utf8_t *discs = NULL;
+    id3_utf8_t *discno = NULL;
 
     struct id3_file *tagfile = id3_file_open (file, ID3_FILE_MODE_READONLY);
     const struct id3_tag *tag = id3_file_tag (tagfile);
@@ -190,6 +194,9 @@ _get_metadata_file (DinleMediaFile *self, gchar *file)
         g_print ("year: %s\n", year);
     }
 
+    gchar **trck = NULL;
+    gchar *trackno = NULL;
+    gchar *totaltracks = NULL;
     frame = id3_tag_findframe (tag, ID3_FRAME_TRACK, 0);
     if (frame) {
         union id3_field const *field;
@@ -200,7 +207,12 @@ _get_metadata_file (DinleMediaFile *self, gchar *file)
 
         const id3_ucs4_t *str = id3_field_getstrings(field, 0);
         track = id3_ucs4_utf8duplicate (str);
-        g_print ("track: %s\n", track);
+        trck = g_strsplit (track, "/", 0);
+        if (trck[0])
+            trackno = trck[0];
+        if (trck[1])
+            totaltracks = trck[1];
+        g_print ("track: %s %s\n", trackno, totaltracks);
     }
 
     frame = id3_tag_findframe (tag, "TLEN", 0);
@@ -216,6 +228,24 @@ _get_metadata_file (DinleMediaFile *self, gchar *file)
         g_print ("length: %s\n", length);
     }
 
+    gchar** pos = NULL;
+    frame = id3_tag_findframe (tag, "TPOS", 0);
+    if (frame) {
+        union id3_field const *field;
+        unsigned int nstrings;
+
+        field    = id3_frame_field(frame, 1);
+        nstrings = id3_field_getnstrings(field);
+
+        const id3_ucs4_t *str = id3_field_getstrings(field, 0);
+        disc = id3_ucs4_utf8duplicate (str);
+        pos = g_strsplit (disc, "/", 0);
+        if (pos[0])
+            discno = pos[0];
+        if (pos[1])
+            discs = pos[1];
+        g_print ("disc: %s %s\n", discno, discs);
+    }
 
     id3_file_close (tagfile);
 
@@ -225,8 +255,11 @@ _get_metadata_file (DinleMediaFile *self, gchar *file)
                                            "album", album,
                                            "genre", genre,
                                            "year", year,
-                                           "track", track,
+                                           "track", trackno,
+                                           "tracks", totaltracks,
                                            "length", length,
+                                           "discno", discno,
+                                           "discs", discs,
                                            NULL);
 
     g_free (title);
@@ -236,6 +269,9 @@ _get_metadata_file (DinleMediaFile *self, gchar *file)
     g_free (year);
     g_free (track);
     g_free (length);
+    g_free (disc);
+    g_strfreev (pos);
+    g_strfreev (trck);
 
     return md;
 }

@@ -19,15 +19,24 @@
 
 #include "dinle-media-file.h"
 
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
 G_DEFINE_TYPE (DinleMediaFile, dinle_media_file, G_TYPE_OBJECT)
 
 #define MEDIA_FILE_PRIVATE(o) \
   (G_TYPE_INSTANCE_GET_PRIVATE ((o), DINLE_TYPE_MEDIA_FILE, DinleMediaFilePrivate))
 
+
+#define HASH_BUF_SIZE (1024)
+
 struct _DinleMediaFilePrivate
 {
     gchar *file;
+    gchar *hash;
     DinleMediaMetadata *md;
+    guint size;
 };
 
 
@@ -72,6 +81,7 @@ dinle_media_file_finalize (GObject *object)
     if (priv->md)
         g_object_unref (priv->md);
     g_free (priv->file);
+    g_free (priv->hash);
 
     G_OBJECT_CLASS (dinle_media_file_parent_class)->finalize (object);
 }
@@ -98,6 +108,8 @@ dinle_media_file_init (DinleMediaFile *self)
 
     self->priv->md = NULL;
     self->priv->file = NULL;
+    self->priv->hash = NULL;
+    self->priv->size = NULL;
 }
 
 DinleMediaFile *
@@ -133,11 +145,32 @@ dinle_media_file_set (DinleMediaFile *self, const gchar *file)
     return TRUE;
 }
 
+void
+dinle_media_file_unset (DinleMediaFile *self)
+{
+    g_return_if_fail (DINLE_IS_MEDIA_FILE (self));
+    DinleMediaFilePrivate *priv = MEDIA_FILE_PRIVATE (self);
+
+    if (priv->file) {
+        g_free (priv->file);
+        priv->file = NULL;
+    }
+    if (priv->hash) {
+        g_free (priv->hash);
+        priv->hash = NULL;
+    }
+
+    priv->size = 0;
+}
+
 const DinleMediaMetadata *
 dinle_media_file_get_metadata (DinleMediaFile *self)
 {
     g_return_val_if_fail (DINLE_IS_MEDIA_FILE (self), NULL);
     DinleMediaFilePrivate *priv = MEDIA_FILE_PRIVATE (self);
+
+    if (priv->md)
+        return priv->md;
 
     if (DINLE_MEDIA_FILE_GET_CLASS (self)->get_metadata_file) {
         return (DINLE_MEDIA_FILE_GET_CLASS (self)->get_metadata_file)(self, priv->file);
@@ -145,4 +178,56 @@ dinle_media_file_get_metadata (DinleMediaFile *self)
 
     g_critical ("Pure virtual class get_metadata method called.\n");
     return NULL;
+}
+
+const gchar *
+dinle_media_file_get_hash (DinleMediaFile *self)
+{
+    guchar data[HASH_BUF_SIZE] = {0,};
+    DinleMediaFilePrivate *priv = NULL;
+    GChecksum *cs = NULL;
+    FILE *input = NULL;
+    gsize size = 0;
+    const gchar *sum;
+
+    g_return_val_if_fail (DINLE_IS_MEDIA_FILE (self), NULL);
+    priv = MEDIA_FILE_PRIVATE (self);
+
+    if (priv->hash)
+        return priv->hash;
+
+    g_return_val_if_fail (priv->file, NULL);
+
+    cs = g_checksum_new (G_CHECKSUM_MD5);
+    input = fopen (priv->file, "rb");
+    do {
+        size = fread( (void *)data, sizeof( guchar ), HASH_BUF_SIZE, input );
+        g_checksum_update( cs, data, size );
+    } while (size == HASH_BUF_SIZE);
+    fclose (input);
+    sum = g_checksum_get_string (cs);
+    priv->hash = g_strdup (sum);
+
+    return sum;
+}
+
+guint
+dinle_media_file_get_size (DinleMediaFile *self)
+{
+    DinleMediaFilePrivate *priv = NULL;
+
+    g_return_val_if_fail (DINLE_IS_MEDIA_FILE (self), 0);
+    priv = MEDIA_FILE_PRIVATE (self);
+
+    if (priv->size > 0)
+        return priv->size;
+
+    g_return_val_if_fail (priv->file, 0);
+
+    struct stat st;
+    stat (priv->file, &st);
+
+    priv->size = st.st_size;
+
+    return (guint)st.st_size;
 }

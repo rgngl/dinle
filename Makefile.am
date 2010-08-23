@@ -1,5 +1,5 @@
 ACLOCAL_AMFLAGS = -I m4
-AUTOMAKE_OPTIONS = foreign 1.10 dist-bzip2 subdir-objects
+AUTOMAKE_OPTIONS = foreign dist-bzip2 subdir-objects
 
 AM_CPPFLAGS = -I$(srcdir)/src
 

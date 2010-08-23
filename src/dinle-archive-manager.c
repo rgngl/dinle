@@ -41,12 +41,12 @@ struct _DinleArchiveManagerPrivate
     GHashTable *media_formats;
 };
 
-typedef void (*_traverse_callback) (const gchar* file);
+typedef void (*_traverse_callback) (const gchar* file, GType objtype);
 
 static void _initialize (void);
 static void _update_database (void);
-static void _traverse_directory (const gchar *path, const gchar *ext, _traverse_callback cb);
-static void _traverse_cb (const gchar *file);
+static void _traverse_directory (const gchar *path, const gchar *ext, _traverse_callback cb, GType objtype);
+static void _traverse_cb (const gchar *file, GType objtype);
 static void _media_format_action (gpointer key, gpointer value, gpointer userdata);
 
 static void
@@ -162,7 +162,7 @@ _update_database (void)
 }
 
 static void
-_traverse_directory (const gchar *path, const gchar *ext, _traverse_callback cb)
+_traverse_directory (const gchar *path, const gchar *ext, _traverse_callback cb, GType objtype)
 {
     GError *error = NULL;
     const gchar *current = NULL;
@@ -172,31 +172,39 @@ _traverse_directory (const gchar *path, const gchar *ext, _traverse_callback cb)
         return;
 
     while (current = g_dir_read_name (dir)) {
-        if (g_file_test (current, G_FILE_TEST_IS_DIR)) {
-            gchar *newdir = g_strconcat (path, "/", current, NULL);
-            _traverse_directory (newdir, ext, NULL);
-            g_free (newdir);
+        gchar *file = g_strconcat (path, "/", current, NULL);
+        if (g_file_test (file, G_FILE_TEST_IS_DIR)) {
+            _traverse_directory (file, ext, cb, objtype);
         } else {
             gchar *suffix = g_strconcat (".", ext, NULL);
-            if (g_str_has_suffix (current, suffix)) {
-                gchar *file = g_strconcat (path, "/", current, NULL);
+            if (g_str_has_suffix (file, suffix)) {
                 if (cb)
-                    cb (file);
-                g_free (file);
+                    cb (file, objtype);
             }
             g_free (suffix);
         }
+        g_free (file);
     }
 
     g_dir_close (dir);
 }
 
-static void _traverse_cb (const gchar *file)
+static void _traverse_cb (const gchar *file, GType objtype)
 {
-    g_print ("%s\n", file);
-    DinleMediaFile *mf = dinle_media_file_mp3_new ();
+    g_return_if_fail (DINLE_IS_ARCHIVE_MANAGER (instance));
+    DinleArchiveManagerPrivate *priv = ARCHIVE_MANAGER_PRIVATE (instance);
+
+    DinleMediaFile *mf = g_object_new (objtype, NULL);
+    if (! DINLE_IS_MEDIA_FILE (mf) ) {
+        g_object_unref (mf);
+        return;
+    }
+
     dinle_media_file_set (mf, file);
     const DinleMediaMetadata *md = dinle_media_file_get_metadata (mf);
+    gchar *sum = dinle_media_file_get_hash (mf);
+    guint size = dinle_media_file_get_size (mf);
+    g_print ("%s\t %s\t %d\t %s\n", file, sum, size, g_type_name (objtype));
 }
 
 static void _media_format_action (gpointer key, gpointer value, gpointer userdata)
@@ -205,7 +213,7 @@ static void _media_format_action (gpointer key, gpointer value, gpointer userdat
              /*(const gchar*)userdata,*/
              /*(const gchar*)key,*/
              /*g_type_name ((GType)value));*/
-    _traverse_directory ((const gchar*)userdata, (const gchar*)key, _traverse_cb);
+    _traverse_directory ((const gchar*)userdata, (const gchar*)key, _traverse_cb, (GType)value);
 }
 
 DinleArchiveManager *
