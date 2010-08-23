@@ -20,6 +20,7 @@
 #include "config.h"
 
 #include <stdlib.h>
+#include <sqlite3.h>
 
 #include "dinle-archive-manager.h"
 #include "dinle-config-manager.h"
@@ -39,6 +40,7 @@ static DinleArchiveManager *instance = NULL;
 struct _DinleArchiveManagerPrivate
 {
     GHashTable *media_formats;
+    sqlite3 *db;
 };
 
 typedef void (*_traverse_callback) (const gchar* file, GType objtype);
@@ -106,6 +108,7 @@ dinle_archive_manager_init (DinleArchiveManager *self)
     self->priv = ARCHIVE_MANAGER_PRIVATE (self);
 
     self->priv->media_formats = g_hash_table_new (g_str_hash, g_str_equal);
+    self->priv->db = NULL;
 }
 
 static DinleArchiveManager *
@@ -150,9 +153,14 @@ _update_database (void)
     DinleConfigManager *cm = dinle_config_manager_get ();
 
     GValue media_root_prop = {0,};
+    GValue media_db_prop = {0,};
     g_value_init (&media_root_prop, G_TYPE_STRING);
+    g_value_init (&media_db_prop, G_TYPE_STRING);
     g_object_get_property (G_OBJECT (cm), "media-root", &media_root_prop);
+    g_object_get_property (G_OBJECT (cm), "media-db", &media_db_prop);
     const gchar *media_root = g_value_get_string (&media_root_prop);
+    const gchar *media_db = g_value_get_string (&media_db_prop);
+    sqlite3_open (media_db, &(priv->db));
 
     g_hash_table_foreach (priv->media_formats,
                           _media_format_action,
