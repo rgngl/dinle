@@ -43,6 +43,7 @@ struct _DinleDbSqlitePrivate
 
 static gboolean _set_db (DinleDb *db, gchar *name);
 static gboolean _add_file (DinleDb *db, DinleMediaFile *file);
+static gboolean _unset (DinleDb *db);
 
 static gboolean _check_create_table (DinleDbSqlite *db, const gchar *table_name);
 
@@ -64,8 +65,14 @@ _check_create_table (DinleDbSqlite *db, const gchar *table_name)
     int success = sqlite3_get_table (priv->db, query, &result, &rows, &columns, NULL);
     g_print ("rows: %d, cols: %d\n", rows, columns);
 
+    if (rows > 0)
+        return TRUE;
+
     sqlite3_free_table (result);
     g_free (query);
+
+    success = sqlite3_get_table (priv->db, FILES_TABLE_CREATE, &result, &rows, &columns, NULL);
+    sqlite3_free_table (result);
 
     return (success == SQLITE_OK);
 }
@@ -122,6 +129,7 @@ dinle_db_sqlite_class_init (DinleDbSqliteClass *klass)
     object_class->finalize = dinle_db_sqlite_finalize;
     parent_class->set_db = _set_db;
     parent_class->add_file = _add_file;
+    parent_class->unset = _unset;
 }
 
 static void
@@ -163,6 +171,16 @@ _add_file (DinleDb *db, DinleMediaFile *file)
     int result = sqlite3_get_table (priv->db, query, &table, &rows, &columns, NULL);
 
     return (result == SQLITE_OK);
+}
+
+static gboolean
+_unset (DinleDb *db)
+{
+    g_return_val_if_fail (DINLE_IS_DB_SQLITE (db), FALSE);
+    DinleDbSqlitePrivate *priv = DB_SQLITE_PRIVATE (db);
+    g_return_val_if_fail (priv->db, FALSE);
+
+    sqlite3_close (priv->db);
 }
 
 DinleDb *

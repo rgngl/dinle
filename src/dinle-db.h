@@ -65,6 +65,7 @@ struct _DinleDbClass
 
     gboolean (*set_db) (DinleDb *db, gchar *name);
     gboolean (*add_file) (DinleDb *db, DinleMediaFile *file);
+    gboolean (*unset) (DinleDb *db);
 };
 
 GType dinle_db_get_type (void) G_GNUC_CONST;
@@ -72,6 +73,7 @@ GType dinle_db_get_type (void) G_GNUC_CONST;
 DinleDb *dinle_db_new (void);
 gboolean dinle_db_set_db (DinleDb *db, gchar *name);
 gboolean dinle_db_add_file (DinleDb *db, DinleMediaFile *file);
+gboolean dinle_db_unset (DinleDb *db);
 
 G_END_DECLS
 

@@ -65,6 +65,7 @@ dinle_db_dispose (GObject *object)
 static void
 dinle_db_finalize (GObject *object)
 {
+    dinle_db_unset (DINLE_DB (object));
     G_OBJECT_CLASS (dinle_db_parent_class)->finalize (object);
 }
 
@@ -81,6 +82,7 @@ dinle_db_class_init (DinleDbClass *klass)
     object_class->finalize = dinle_db_finalize;
     klass->set_db = NULL;
     klass->add_file = NULL;
+    klass->unset = NULL;
 }
 
 static void
@@ -116,5 +118,16 @@ dinle_db_add_file (DinleDb *db, DinleMediaFile *file)
         return DINLE_DB_GET_CLASS (db)->add_file (db, file);
 
     g_critical ("Pure virtual function add_file called...\n");
+    return FALSE;
+}
+
+gboolean dinle_db_unset (DinleDb *db)
+{
+    g_return_val_if_fail (DINLE_IS_DB (db), FALSE);
+
+    if (DINLE_DB_GET_CLASS (db)->unset)
+        return DINLE_DB_GET_CLASS (db)->unset (db);
+
+    g_critical ("Pure virtual function unset called...\n");
     return FALSE;
 }

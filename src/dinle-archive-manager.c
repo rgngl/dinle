@@ -165,6 +165,8 @@ _update_database (void)
     _traverse_directory (media_root, _traverse_cb);
     g_value_unset (&media_root_prop);
     g_value_unset (&media_db_prop);
+
+    g_object_unref (G_OBJECT (priv->db));
 }
 
 static void
