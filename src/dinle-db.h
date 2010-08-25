@@ -22,6 +22,8 @@
 
 #include <glib-object.h>
 
+#include "dinle-media-file.h"
+
 G_BEGIN_DECLS
 
 #define DINLE_TYPE_DB dinle_db_get_type()
@@ -52,19 +54,24 @@ typedef struct _DinleDbPrivate DinleDbPrivate;
 
 struct _DinleDb
 {
-  GObject parent;
+    GObject parent;
 
-  DinleDbPrivate *priv;
+    DinleDbPrivate *priv;
 };
 
 struct _DinleDbClass
 {
-  GObjectClass parent_class;
+    GObjectClass parent_class;
+
+    gboolean (*set_db) (DinleDb *db, gchar *name);
+    gboolean (*add_file) (DinleDb *db, DinleMediaFile *file);
 };
 
 GType dinle_db_get_type (void) G_GNUC_CONST;
 
 DinleDb *dinle_db_new (void);
+gboolean dinle_db_set_db (DinleDb *db, gchar *name);
+gboolean dinle_db_add_file (DinleDb *db, DinleMediaFile *file);
 
 G_END_DECLS
 

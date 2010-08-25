@@ -145,6 +145,15 @@ dinle_media_file_set (DinleMediaFile *self, const gchar *file)
     return TRUE;
 }
 
+const gchar *
+dinle_media_file_get_path (DinleMediaFile *self)
+{
+    g_return_val_if_fail (DINLE_IS_MEDIA_FILE (self), NULL);
+    DinleMediaFilePrivate *priv = MEDIA_FILE_PRIVATE (self);
+
+    return priv->file;
+}
+
 void
 dinle_media_file_unset (DinleMediaFile *self)
 {

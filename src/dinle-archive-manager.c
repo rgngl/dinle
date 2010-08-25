@@ -20,11 +20,11 @@
 #include "config.h"
 
 #include <stdlib.h>
-#include <sqlite3.h>
 
 #include "dinle-archive-manager.h"
 #include "dinle-config-manager.h"
 #include "dinle-media-file.h"
+#include "dinle-db-sqlite.h"
 
 #ifdef HAVE_MP3
 #include "dinle-media-file-mp3.h"
@@ -40,16 +40,15 @@ static DinleArchiveManager *instance = NULL;
 struct _DinleArchiveManagerPrivate
 {
     GHashTable *media_formats;
-    sqlite3 *db;
+    DinleDb *db;
 };
 
 typedef void (*_traverse_callback) (const gchar* file, GType objtype);
 
 static void _initialize (void);
 static void _update_database (void);
-static void _traverse_directory (const gchar *path, const gchar *ext, _traverse_callback cb, GType objtype);
+static void _traverse_directory (const gchar *path,  _traverse_callback cb);
 static void _traverse_cb (const gchar *file, GType objtype);
-static void _media_format_action (gpointer key, gpointer value, gpointer userdata);
 
 static void
 dinle_archive_manager_get_property (GObject    *object,
@@ -160,21 +159,21 @@ _update_database (void)
     g_object_get_property (G_OBJECT (cm), "media-db", &media_db_prop);
     const gchar *media_root = g_value_get_string (&media_root_prop);
     const gchar *media_db = g_value_get_string (&media_db_prop);
-    sqlite3_open (media_db, &(priv->db));
 
-    g_hash_table_foreach (priv->media_formats,
-                          _media_format_action,
-                          (gpointer)media_root);
+    priv->db = DINLE_DB (dinle_db_sqlite_new_with_name (media_db));
 
+    _traverse_directory (media_root, _traverse_cb);
     g_value_unset (&media_root_prop);
+    g_value_unset (&media_db_prop);
 }
 
 static void
-_traverse_directory (const gchar *path, const gchar *ext, _traverse_callback cb, GType objtype)
+_traverse_directory (const gchar *path, _traverse_callback cb)
 {
     GError *error = NULL;
     const gchar *current = NULL;
     GDir* dir = g_dir_open (path, 0, &error);
+    DinleArchiveManagerPrivate *priv = ARCHIVE_MANAGER_PRIVATE (instance);
 
     if (!dir)
         return;
@@ -182,14 +181,22 @@ _traverse_directory (const gchar *path, const gchar *ext, _traverse_callback cb,
     while (current = g_dir_read_name (dir)) {
         gchar *file = g_strconcat (path, "/", current, NULL);
         if (g_file_test (file, G_FILE_TEST_IS_DIR)) {
-            _traverse_directory (file, ext, cb, objtype);
+            _traverse_directory (file, cb);
         } else {
-            gchar *suffix = g_strconcat (".", ext, NULL);
-            if (g_str_has_suffix (file, suffix)) {
-                if (cb)
-                    cb (file, objtype);
+            GHashTableIter iter;
+            gpointer key, value;
+            g_hash_table_iter_init (&iter, priv->media_formats);
+
+            while (g_hash_table_iter_next (&iter, &key, &value)) {
+                gchar *ext = (gchar*)key;
+                GType objtype = (GType)value;
+                gchar *suffix = g_strconcat (".", ext, NULL);
+                if (g_str_has_suffix (file, suffix)) {
+                    if (cb)
+                        cb (file, objtype);
+                }
+                g_free (suffix);
             }
-            g_free (suffix);
         }
         g_free (file);
     }
@@ -197,7 +204,8 @@ _traverse_directory (const gchar *path, const gchar *ext, _traverse_callback cb,
     g_dir_close (dir);
 }
 
-static void _traverse_cb (const gchar *file, GType objtype)
+static void
+_traverse_cb (const gchar *file, GType objtype)
 {
     g_return_if_fail (DINLE_IS_ARCHIVE_MANAGER (instance));
     DinleArchiveManagerPrivate *priv = ARCHIVE_MANAGER_PRIVATE (instance);
@@ -209,19 +217,11 @@ static void _traverse_cb (const gchar *file, GType objtype)
     }
 
     dinle_media_file_set (mf, file);
+    dinle_db_add_file (priv->db, mf);
     const DinleMediaMetadata *md = dinle_media_file_get_metadata (mf);
     gchar *sum = dinle_media_file_get_hash (mf);
     guint size = dinle_media_file_get_size (mf);
     g_print ("%s\t %s\t %d\t %s\n", file, sum, size, g_type_name (objtype));
-}
-
-static void _media_format_action (gpointer key, gpointer value, gpointer userdata)
-{
-    /*g_print ("media format action %s %s %s\n",*/
-             /*(const gchar*)userdata,*/
-             /*(const gchar*)key,*/
-             /*g_type_name ((GType)value));*/
-    _traverse_directory ((const gchar*)userdata, (const gchar*)key, _traverse_cb, (GType)value);
 }
 
 DinleArchiveManager *

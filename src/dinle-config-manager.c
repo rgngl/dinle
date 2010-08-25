@@ -103,6 +103,7 @@ dinle_config_manager_get_property (GObject    *object,
             break;
         case PROP_MEDIA_DB:
             g_value_set_string (value, priv->media_db);
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
     }

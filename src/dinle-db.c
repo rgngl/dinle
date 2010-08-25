@@ -26,6 +26,7 @@ G_DEFINE_TYPE (DinleDb, dinle_db, G_TYPE_OBJECT)
 
 struct _DinleDbPrivate
 {
+    int foo;
 };
 
 
@@ -35,10 +36,10 @@ dinle_db_get_property (GObject    *object,
                        GValue     *value,
                        GParamSpec *pspec)
 {
-  switch (property_id)
+    switch (property_id)
     {
-    default:
-      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+        default:
+            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
     }
 }
 
@@ -48,46 +49,72 @@ dinle_db_set_property (GObject      *object,
                        const GValue *value,
                        GParamSpec   *pspec)
 {
-  switch (property_id)
+    switch (property_id)
     {
-    default:
-      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+        default:
+            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
     }
 }
 
 static void
 dinle_db_dispose (GObject *object)
 {
-  G_OBJECT_CLASS (dinle_db_parent_class)->dispose (object);
+    G_OBJECT_CLASS (dinle_db_parent_class)->dispose (object);
 }
 
 static void
 dinle_db_finalize (GObject *object)
 {
-  G_OBJECT_CLASS (dinle_db_parent_class)->finalize (object);
+    G_OBJECT_CLASS (dinle_db_parent_class)->finalize (object);
 }
 
 static void
 dinle_db_class_init (DinleDbClass *klass)
 {
-  GObjectClass *object_class = G_OBJECT_CLASS (klass);
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
-  g_type_class_add_private (klass, sizeof (DinleDbPrivate));
+    g_type_class_add_private (klass, sizeof (DinleDbPrivate));
 
-  object_class->get_property = dinle_db_get_property;
-  object_class->set_property = dinle_db_set_property;
-  object_class->dispose = dinle_db_dispose;
-  object_class->finalize = dinle_db_finalize;
+    object_class->get_property = dinle_db_get_property;
+    object_class->set_property = dinle_db_set_property;
+    object_class->dispose = dinle_db_dispose;
+    object_class->finalize = dinle_db_finalize;
+    klass->set_db = NULL;
+    klass->add_file = NULL;
 }
 
 static void
 dinle_db_init (DinleDb *self)
 {
-  self->priv = DB_PRIVATE (self);
+    self->priv = DB_PRIVATE (self);
 }
 
 DinleDb *
 dinle_db_new (void)
 {
-  return g_object_new (DINLE_TYPE_DB, NULL);
+    return g_object_new (DINLE_TYPE_DB, NULL);
+}
+
+gboolean
+dinle_db_set_db (DinleDb* db, gchar *name)
+{
+    g_return_val_if_fail (DINLE_IS_DB (db), FALSE);
+
+    if (DINLE_DB_GET_CLASS (db)->set_db)
+        return DINLE_DB_GET_CLASS (db)->set_db (db, name);
+
+    g_critical ("Pure virtual function set_db called...\n");
+    return FALSE;
+}
+
+gboolean
+dinle_db_add_file (DinleDb *db, DinleMediaFile *file)
+{
+    g_return_val_if_fail (DINLE_IS_DB (db), FALSE);
+
+    if (DINLE_DB_GET_CLASS (db)->add_file)
+        return DINLE_DB_GET_CLASS (db)->add_file (db, file);
+
+    g_critical ("Pure virtual function add_file called...\n");
+    return FALSE;
 }

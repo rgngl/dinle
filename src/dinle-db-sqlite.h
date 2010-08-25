@@ -21,6 +21,7 @@
 #define _DINLE_DB_SQLITE_H
 
 #include <glib-object.h>
+#include "dinle-db.h"
 
 G_BEGIN_DECLS
 
@@ -52,19 +53,20 @@ typedef struct _DinleDbSqlitePrivate DinleDbSqlitePrivate;
 
 struct _DinleDbSqlite
 {
-  DinleDb parent;
+    DinleDb parent;
 
-  DinleDbSqlitePrivate *priv;
+    DinleDbSqlitePrivate *priv;
 };
 
 struct _DinleDbSqliteClass
 {
-  DinleDbClass parent_class;
+    DinleDbClass parent_class;
 };
 
 GType dinle_db_sqlite_get_type (void) G_GNUC_CONST;
 
-DinleDbSqlite *dinle_db_sqlite_new (void);
+DinleDb *dinle_db_sqlite_new (void);
+DinleDb *dinle_db_sqlite_new_with_name (gchar *name);
 
 G_END_DECLS
 
