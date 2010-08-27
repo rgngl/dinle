@@ -115,7 +115,9 @@ int main(int argc, char** argv)
     if (music_root)
         fprintf(stderr, "%s\n", music_root);
 
-    g_main_loop_run(main_loop);
+    /*g_main_loop_run(main_loop);*/
+    g_object_unref (dinle_archive_manager_get ());
+    g_object_unref (dinle_archive_manager_get ());
 
     return 0;
 }

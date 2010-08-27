@@ -32,6 +32,7 @@ G_DEFINE_TYPE (DinleDbSqlite, dinle_db_sqlite, DINLE_TYPE_DB)
                            " size INTEGER, hash TEXT"
 #define FILES_TABLE_ADD "INSERT INTO \"" FILES_TABLE "\" "\
                         "VALUES ('%s', %d, '%s');"
+#define FILES_TABLE_GET_BY_NAME "SELECT path,size,hash FROM " FILES_TABLE " WHERE path='%s';"
 
 #define TABLE_CHECK_QUERY "SELECT name FROM sqlite_master WHERE type='table' AND name='%s';"
 #define TABLE_CREATE_QUERY "CREATE TABLE %s (%s) ;"
@@ -43,8 +44,9 @@ struct _DinleDbSqlitePrivate
     sqlite3 *db;
 };
 
-static gboolean _set_db (DinleDb *db, gchar *name);
+static gboolean _set_db (DinleDb *db, const gchar *name);
 static gboolean _add_file (DinleDb *db, DinleMediaFile *file);
+static DinleMediaFile* _get_file_by_name (DinleDb *db, const gchar *file);
 static gboolean _unset (DinleDb *db);
 static gboolean _drop (DinleDb *db);
 static gint _file_count (DinleDb *db);
@@ -117,6 +119,9 @@ dinle_db_sqlite_dispose (GObject *object)
 static void
 dinle_db_sqlite_finalize (GObject *object)
 {
+    g_print ("Destroying Sqlite backend.\n");
+    dinle_db_unset (DINLE_DB (object));
+
     G_OBJECT_CLASS (dinle_db_sqlite_parent_class)->finalize (object);
 }
 
@@ -137,6 +142,7 @@ dinle_db_sqlite_class_init (DinleDbSqliteClass *klass)
     parent_class->unset = _unset;
     parent_class->drop = _drop;
     parent_class->file_count = _file_count;
+    parent_class->get_file_by_name = _get_file_by_name;
 }
 
 static void
@@ -147,7 +153,7 @@ dinle_db_sqlite_init (DinleDbSqlite *self)
 }
 
 static gboolean
-_set_db (DinleDb *db, gchar *name)
+_set_db (DinleDb *db, const gchar *name)
 {
     g_return_val_if_fail (DINLE_IS_DB_SQLITE (db), FALSE);
     DinleDbSqlitePrivate *priv = DB_SQLITE_PRIVATE (db);
@@ -166,6 +172,7 @@ _add_file (DinleDb *db, DinleMediaFile *file)
 
     gchar **table;
     gint rows, columns;
+    gchar *errormsg;
 
     if (!_check_create_table (DINLE_DB_SQLITE (db), FILES_TABLE, FILES_TABLE_FIELDS))
         return FALSE;
@@ -175,11 +182,38 @@ _add_file (DinleDb *db, DinleMediaFile *file)
                                     dinle_media_file_get_size (file),
                                     dinle_media_file_get_hash (file));
 
-    int result = sqlite3_get_table (priv->db, query, &table, &rows, &columns, NULL);
+    int result = sqlite3_get_table (priv->db, query, &table, &rows, &columns, &errormsg);
     sqlite3_free_table (table);
     g_free (query);
 
+    if (result != SQLITE_OK)
+        g_warning ("sqlite error happened: %s\n",errormsg);
+
     return (result == SQLITE_OK);
+}
+
+static DinleMediaFile *
+_get_file_by_name (DinleDb *db, const gchar *name)
+{
+    DinleMediaFile *mf = NULL;
+
+    g_return_val_if_fail (DINLE_IS_DB_SQLITE (db), NULL);
+    DinleDbSqlitePrivate *priv = DB_SQLITE_PRIVATE (db);
+    g_return_val_if_fail (priv->db, NULL);
+
+    gchar **table;
+    gint rows, cols;
+
+    gchar *query = g_strdup_printf (FILES_TABLE_GET_BY_NAME, name);
+
+    int result = sqlite3_get_table (priv->db, query, &table, &rows, &cols, NULL);
+    if (rows >= 1) {
+        /*g_print ("%s %s %s\n", table[cols], table[cols+1], table[cols+2]);*/
+        mf = dinle_media_file_new ();
+        dinle_media_file_set_with_hash_size (mf, table[cols], table[cols+2], g_ascii_strtoll(table[cols+1], NULL, 10));
+    }
+
+    return mf;
 }
 
 static gboolean
@@ -190,6 +224,8 @@ _unset (DinleDb *db)
     g_return_val_if_fail (priv->db, FALSE);
 
     sqlite3_close (priv->db);
+
+    return TRUE;
 }
 
 static gboolean
@@ -224,6 +260,8 @@ _file_count (DinleDb *db)
     gchar *query = g_strdup_printf (TABLE_COUNT_QUERY, FILES_TABLE);
 
     int result = sqlite3_get_table (priv->db, query, &table, &rows, &cols, NULL);
+    if (rows < 1)
+        return -1;
 
     gint count = (gint) g_ascii_strtoll (table[1], NULL, 10);
     g_free (query);

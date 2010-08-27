@@ -52,6 +52,7 @@ static void _update_database (void);
 static void _traverse_directory (const gchar *path,  _traverse_callback cb, gpointer userdata);
 static void _traverse_cb (const gchar *file, GType objtype, gpointer data);
 static void _count_files_cb (const gchar *file, GType objtype, gpointer data);
+static void _get_from_db_cb (const gchar *file, GType objtype, gpointer data);
 
 static void
 dinle_archive_manager_get_property (GObject    *object,
@@ -88,6 +89,12 @@ dinle_archive_manager_dispose (GObject *object)
 static void
 dinle_archive_manager_finalize (GObject *object)
 {
+    g_print ("Destroying archive manager instance.\n");
+    DinleArchiveManagerPrivate *priv = ARCHIVE_MANAGER_PRIVATE (instance);
+
+    if (priv->db)
+        g_object_unref (priv->db);
+
     G_OBJECT_CLASS (dinle_archive_manager_parent_class)->finalize (object);
 }
 
@@ -191,6 +198,15 @@ _update_database (void)
     DinleArchiveManagerPrivate *priv = ARCHIVE_MANAGER_PRIVATE (instance);
     DinleConfigManager *cm = dinle_config_manager_get ();
 
+    GValue media_root_prop = {0,};
+    g_value_init (&media_root_prop, G_TYPE_STRING);
+    g_object_get_property (G_OBJECT (cm), "media-root", &media_root_prop);
+    const gchar *media_root = g_value_get_string (&media_root_prop);
+
+
+    _traverse_directory (media_root, _get_from_db_cb, NULL);
+
+    g_value_unset (&media_root_prop);
 }
 
 static void
@@ -242,8 +258,8 @@ _traverse_cb (const gchar *file, GType objtype, gpointer data)
     }
 
     dinle_media_file_set (mf, file);
-    /*if (!dinle_db_add_file (priv->db, mf))*/
-        /*g_warning ("couldn't add to db...\n");*/
+    if (!dinle_db_add_file (priv->db, mf))
+        g_warning ("couldn't add to db...\n");
     const DinleMediaMetadata *md = dinle_media_file_get_metadata (mf);
     const gchar *sum = dinle_media_file_get_hash (mf);
     const guint size = dinle_media_file_get_size (mf);
@@ -262,6 +278,15 @@ _count_files_cb (const gchar *file, GType objtype, gpointer data)
     priv->files++;
 }
 
+static void
+_get_from_db_cb (const gchar *file, GType objtype, gpointer data)
+{
+    g_return_if_fail (DINLE_IS_ARCHIVE_MANAGER (instance));
+    DinleArchiveManagerPrivate *priv = ARCHIVE_MANAGER_PRIVATE (instance);
+
+    dinle_db_get_file_by_name (priv->db, file);
+}
+
 DinleArchiveManager *
 dinle_archive_manager_get (void)
 {
@@ -269,9 +294,11 @@ dinle_archive_manager_get (void)
         instance = dinle_archive_manager_new ();
         DinleArchiveManagerPrivate *priv = ARCHIVE_MANAGER_PRIVATE (instance);
         _initialize ();
-        if (dinle_db_file_count (priv->db) == 0) {
+        if (dinle_db_file_count (priv->db) <= 0) {
+            g_print("building db\n");
             _build_database ();
         } else {
+            g_print ("updating db, it has %d files.\n", dinle_db_file_count (priv->db));
             _update_database ();
         }
     }

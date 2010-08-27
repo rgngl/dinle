@@ -72,6 +72,7 @@ GType dinle_media_file_get_type (void) G_GNUC_CONST;
 DinleMediaFile *dinle_media_file_new (void);
 const gchar *dinle_media_file_extensions(DinleMediaFile *self);
 gboolean dinle_media_file_set (DinleMediaFile *self, const gchar *file);
+gboolean dinle_media_file_set_with_hash_size (DinleMediaFile *self, const gchar *file, const gchar *hash, guint size);
 const gchar *dinle_media_file_get_path (DinleMediaFile *self);
 void dinle_media_file_unset (DinleMediaFile *self);
 const DinleMediaMetadata * dinle_media_file_get_metadata (DinleMediaFile *self);
