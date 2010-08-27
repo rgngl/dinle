@@ -66,7 +66,7 @@ struct _DinleDbSqliteClass
 GType dinle_db_sqlite_get_type (void) G_GNUC_CONST;
 
 DinleDb *dinle_db_sqlite_new (void);
-DinleDb *dinle_db_sqlite_new_with_name (gchar *name);
+DinleDb *dinle_db_sqlite_new_with_name (const gchar *name);
 
 G_END_DECLS
 

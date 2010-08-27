@@ -139,7 +139,7 @@ _get_metadata_file (DinleMediaFile *self, gchar *file)
 
         const id3_ucs4_t *str = id3_field_getstrings(field, 0);
         title = id3_ucs4_utf8duplicate (str);
-        g_print ("title: %s\n", title);
+        /*g_print ("title: %s\n", title);*/
     }
 
     frame = id3_tag_findframe (tag, ID3_FRAME_ARTIST, 0);
@@ -152,7 +152,7 @@ _get_metadata_file (DinleMediaFile *self, gchar *file)
 
         const id3_ucs4_t *str = id3_field_getstrings(field, 0);
         artist = id3_ucs4_utf8duplicate (str);
-        g_print ("artist: %s\n", artist);
+        /*g_print ("artist: %s\n", artist);*/
     }
 
     frame = id3_tag_findframe (tag, ID3_FRAME_ALBUM, 0);
@@ -165,7 +165,7 @@ _get_metadata_file (DinleMediaFile *self, gchar *file)
 
         const id3_ucs4_t *str = id3_field_getstrings(field, 0);
         album = id3_ucs4_utf8duplicate (str);
-        g_print ("album: %s\n", album);
+        /*g_print ("album: %s\n", album);*/
     }
 
     frame = id3_tag_findframe (tag, ID3_FRAME_GENRE, 0);
@@ -178,7 +178,7 @@ _get_metadata_file (DinleMediaFile *self, gchar *file)
 
         const id3_ucs4_t *str = id3_field_getstrings(field, 0);
         genre = id3_ucs4_utf8duplicate (str);
-        g_print ("genre: %s\n", genre);
+        /*g_print ("genre: %s\n", genre);*/
     }
 
     frame = id3_tag_findframe (tag, ID3_FRAME_YEAR, 0);
@@ -191,7 +191,7 @@ _get_metadata_file (DinleMediaFile *self, gchar *file)
 
         const id3_ucs4_t *str = id3_field_getstrings(field, 0);
         year = id3_ucs4_utf8duplicate (str);
-        g_print ("year: %s\n", year);
+        /*g_print ("year: %s\n", year);*/
     }
 
     gchar **trck = NULL;
@@ -212,7 +212,7 @@ _get_metadata_file (DinleMediaFile *self, gchar *file)
             trackno = trck[0];
         if (trck[1])
             totaltracks = trck[1];
-        g_print ("track: %s %s\n", trackno, totaltracks);
+        /*g_print ("track: %s %s\n", trackno, totaltracks);*/
     }
 
     frame = id3_tag_findframe (tag, "TLEN", 0);
@@ -225,7 +225,7 @@ _get_metadata_file (DinleMediaFile *self, gchar *file)
 
         const id3_ucs4_t *str = id3_field_getstrings(field, 0);
         length = id3_ucs4_utf8duplicate (str);
-        g_print ("length: %s\n", length);
+        /*g_print ("length: %s\n", length);*/
     }
 
     gchar** pos = NULL;
@@ -244,7 +244,7 @@ _get_metadata_file (DinleMediaFile *self, gchar *file)
             discno = pos[0];
         if (pos[1])
             discs = pos[1];
-        g_print ("disc: %s %s\n", discno, discs);
+        /*g_print ("disc: %s %s\n", discno, discs);*/
     }
 
     id3_file_close (tagfile);

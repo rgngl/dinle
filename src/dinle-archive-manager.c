@@ -41,14 +41,17 @@ struct _DinleArchiveManagerPrivate
 {
     GHashTable *media_formats;
     DinleDb *db;
+    guint files;
 };
 
-typedef void (*_traverse_callback) (const gchar* file, GType objtype);
+typedef void (*_traverse_callback) (const gchar* file, GType objtype,  gpointer data);
 
 static void _initialize (void);
+static void _build_database (void);
 static void _update_database (void);
-static void _traverse_directory (const gchar *path,  _traverse_callback cb);
-static void _traverse_cb (const gchar *file, GType objtype);
+static void _traverse_directory (const gchar *path,  _traverse_callback cb, gpointer userdata);
+static void _traverse_cb (const gchar *file, GType objtype, gpointer data);
+static void _count_files_cb (const gchar *file, GType objtype, gpointer data);
 
 static void
 dinle_archive_manager_get_property (GObject    *object,
@@ -108,6 +111,7 @@ dinle_archive_manager_init (DinleArchiveManager *self)
 
     self->priv->media_formats = g_hash_table_new (g_str_hash, g_str_equal);
     self->priv->db = NULL;
+    self->priv->files = 0;
 }
 
 static DinleArchiveManager *
@@ -121,6 +125,7 @@ _initialize (void)
 {
     gboolean mf_found = FALSE;
     DinleArchiveManagerPrivate *priv = ARCHIVE_MANAGER_PRIVATE (instance);
+    DinleConfigManager *cm = dinle_config_manager_get ();
 
     /*Add supported media file extensions.*/
 #ifdef HAVE_MP3
@@ -143,34 +148,53 @@ _initialize (void)
         g_error ("No media file plugin enabled... Quitting.\n");
         abort();
     }
+
+    GValue media_db_prop = {0,};
+    g_value_init (&media_db_prop, G_TYPE_STRING);
+    g_object_get_property (G_OBJECT (cm), "media-db", &media_db_prop);
+    const gchar *media_db = g_value_get_string (&media_db_prop);
+
+    GValue media_root_prop = {0,};
+    g_value_init (&media_root_prop, G_TYPE_STRING);
+    g_object_get_property (G_OBJECT (cm), "media-root", &media_root_prop);
+    const gchar *media_root = g_value_get_string (&media_root_prop);
+
+    priv->db = DINLE_DB (dinle_db_sqlite_new_with_name (media_db));
+    priv->files = 0;
+    _traverse_directory (media_root, _count_files_cb, NULL);
+    g_print ("%d files found.\n", priv->files);
+
+   g_value_unset (&media_db_prop);
+}
+
+static void
+_build_database (void)
+{
+    g_return_if_fail (DINLE_IS_ARCHIVE_MANAGER (instance));
+    DinleArchiveManagerPrivate *priv = ARCHIVE_MANAGER_PRIVATE (instance);
+    DinleConfigManager *cm = dinle_config_manager_get ();
+
+    GValue media_root_prop = {0,};
+    g_value_init (&media_root_prop, G_TYPE_STRING);
+    g_object_get_property (G_OBJECT (cm), "media-root", &media_root_prop);
+    const gchar *media_root = g_value_get_string (&media_root_prop);
+
+    guint scanned = 0;
+    _traverse_directory (media_root, _traverse_cb, &scanned);
+    g_value_unset (&media_root_prop);
 }
 
 static void
 _update_database (void)
 {
+    g_return_if_fail (DINLE_IS_ARCHIVE_MANAGER (instance));
     DinleArchiveManagerPrivate *priv = ARCHIVE_MANAGER_PRIVATE (instance);
     DinleConfigManager *cm = dinle_config_manager_get ();
 
-    GValue media_root_prop = {0,};
-    GValue media_db_prop = {0,};
-    g_value_init (&media_root_prop, G_TYPE_STRING);
-    g_value_init (&media_db_prop, G_TYPE_STRING);
-    g_object_get_property (G_OBJECT (cm), "media-root", &media_root_prop);
-    g_object_get_property (G_OBJECT (cm), "media-db", &media_db_prop);
-    const gchar *media_root = g_value_get_string (&media_root_prop);
-    const gchar *media_db = g_value_get_string (&media_db_prop);
-
-    priv->db = DINLE_DB (dinle_db_sqlite_new_with_name (media_db));
-
-    _traverse_directory (media_root, _traverse_cb);
-    g_value_unset (&media_root_prop);
-    g_value_unset (&media_db_prop);
-
-    g_object_unref (G_OBJECT (priv->db));
 }
 
 static void
-_traverse_directory (const gchar *path, _traverse_callback cb)
+_traverse_directory (const gchar *path, _traverse_callback cb, gpointer userdata)
 {
     GError *error = NULL;
     const gchar *current = NULL;
@@ -182,20 +206,19 @@ _traverse_directory (const gchar *path, _traverse_callback cb)
 
     while (current = g_dir_read_name (dir)) {
         gchar *file = g_strconcat (path, "/", current, NULL);
-        if (g_file_test (file, G_FILE_TEST_IS_DIR)) {
-            _traverse_directory (file, cb);
+        if (g_file_test (file, G_FILE_TEST_IS_DIR) && (current[0] != '.')) {
+            _traverse_directory (file, cb, userdata);
         } else {
             GHashTableIter iter;
-            gpointer key, value;
+            gpointer key, objtype;
             g_hash_table_iter_init (&iter, priv->media_formats);
 
-            while (g_hash_table_iter_next (&iter, &key, &value)) {
+            while (g_hash_table_iter_next (&iter, &key, &objtype)) {
                 gchar *ext = (gchar*)key;
-                GType objtype = (GType)value;
                 gchar *suffix = g_strconcat (".", ext, NULL);
                 if (g_str_has_suffix (file, suffix)) {
                     if (cb)
-                        cb (file, objtype);
+                        cb (file, (GType)objtype, userdata);
                 }
                 g_free (suffix);
             }
@@ -207,7 +230,7 @@ _traverse_directory (const gchar *path, _traverse_callback cb)
 }
 
 static void
-_traverse_cb (const gchar *file, GType objtype)
+_traverse_cb (const gchar *file, GType objtype, gpointer data)
 {
     g_return_if_fail (DINLE_IS_ARCHIVE_MANAGER (instance));
     DinleArchiveManagerPrivate *priv = ARCHIVE_MANAGER_PRIVATE (instance);
@@ -219,11 +242,24 @@ _traverse_cb (const gchar *file, GType objtype)
     }
 
     dinle_media_file_set (mf, file);
-    dinle_db_add_file (priv->db, mf);
+    /*if (!dinle_db_add_file (priv->db, mf))*/
+        /*g_warning ("couldn't add to db...\n");*/
     const DinleMediaMetadata *md = dinle_media_file_get_metadata (mf);
-    gchar *sum = dinle_media_file_get_hash (mf);
-    guint size = dinle_media_file_get_size (mf);
-    g_print ("%s\t %s\t %d\t %s\n", file, sum, size, g_type_name (objtype));
+    const gchar *sum = dinle_media_file_get_hash (mf);
+    const guint size = dinle_media_file_get_size (mf);
+    guint *scanned = (guint*) data;
+    (*scanned)++;
+    /*g_print ("%s\t %s\t %d\t %s\n", file, sum, size, g_type_name (objtype));*/
+    g_print ("%d of %d scanned                        \r", *scanned, priv->files);
+}
+
+static void
+_count_files_cb (const gchar *file, GType objtype, gpointer data)
+{
+    g_return_if_fail (DINLE_IS_ARCHIVE_MANAGER (instance));
+    DinleArchiveManagerPrivate *priv = ARCHIVE_MANAGER_PRIVATE (instance);
+
+    priv->files++;
 }
 
 DinleArchiveManager *
@@ -231,8 +267,13 @@ dinle_archive_manager_get (void)
 {
     if (instance == NULL || !DINLE_IS_ARCHIVE_MANAGER(instance)) {
         instance = dinle_archive_manager_new ();
+        DinleArchiveManagerPrivate *priv = ARCHIVE_MANAGER_PRIVATE (instance);
         _initialize ();
-        _update_database ();
+        if (dinle_db_file_count (priv->db) == 0) {
+            _build_database ();
+        } else {
+            _update_database ();
+        }
     }
 
     return instance;

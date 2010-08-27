@@ -83,6 +83,8 @@ dinle_db_class_init (DinleDbClass *klass)
     klass->set_db = NULL;
     klass->add_file = NULL;
     klass->unset = NULL;
+    klass->drop = NULL;
+    klass->file_count = NULL;
 }
 
 static void
@@ -130,4 +132,26 @@ gboolean dinle_db_unset (DinleDb *db)
 
     g_critical ("Pure virtual function unset called...\n");
     return FALSE;
+}
+
+gboolean dinle_db_drop (DinleDb *db)
+{
+    g_return_val_if_fail (DINLE_IS_DB (db), FALSE);
+
+    if (DINLE_DB_GET_CLASS (db)->drop)
+        return DINLE_DB_GET_CLASS (db)->drop (db);
+
+    g_critical ("Pure virtual function drop called...\n");
+    return FALSE;
+}
+
+gint dinle_db_file_count (DinleDb *db)
+{
+    g_return_val_if_fail (DINLE_IS_DB (db), -1);
+
+    if (DINLE_DB_GET_CLASS (db)->file_count)
+        return DINLE_DB_GET_CLASS (db)->file_count (db);
+
+    g_critical ("Pure virtual function file_count called...\n");
+    return -1;
 }

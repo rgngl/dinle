@@ -65,6 +65,7 @@ struct _DinleArchiveManagerClass
 GType dinle_archive_manager_get_type (void) G_GNUC_CONST;
 
 DinleArchiveManager *dinle_archive_manager_get (void);
+void dinle_archive_manager_update (void);
 
 G_END_DECLS
 

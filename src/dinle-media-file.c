@@ -29,7 +29,7 @@ G_DEFINE_TYPE (DinleMediaFile, dinle_media_file, G_TYPE_OBJECT)
   (G_TYPE_INSTANCE_GET_PRIVATE ((o), DINLE_TYPE_MEDIA_FILE, DinleMediaFilePrivate))
 
 
-#define HASH_BUF_SIZE (1024)
+#define HASH_BUF_SIZE (1024*1024)
 
 struct _DinleMediaFilePrivate
 {
