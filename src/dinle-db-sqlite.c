@@ -30,7 +30,7 @@ G_DEFINE_TYPE (DinleDbSqlite, dinle_db_sqlite, DINLE_TYPE_DB)
 #define FILES_TABLE "files"
 #define FILES_TABLE_FIELDS "path TEXT PRIMARY KEY, " \
                            " size INTEGER, hash TEXT"
-#define FILES_TABLE_ADD "INSERT INTO \"" FILES_TABLE "\" "\
+#define FILES_TABLE_ADD "INSERT INTO '" FILES_TABLE "' "\
                         "VALUES ('%s', %d, '%s');"
 #define FILES_TABLE_REMOVE "DELETE FROM " FILES_TABLE "WHERE path='%s';"
 #define FILES_TABLE_GET_BY_NAME "SELECT path,size,hash FROM " FILES_TABLE " WHERE path='%s';"
@@ -176,18 +176,21 @@ _add_file (DinleDb *db, DinleMediaFile *file)
     gchar **table;
     gint rows, columns;
     gchar *errormsg;
+    gchar *efile;
 
     if (!_check_create_table (DINLE_DB_SQLITE (db), FILES_TABLE, FILES_TABLE_FIELDS))
         return FALSE;
 
     gchar *query = g_strdup_printf (FILES_TABLE_ADD,
-                                    dinle_media_file_get_path (file),
+                                    efile = g_strescape(dinle_media_file_get_path (file), NULL),
                                     dinle_media_file_get_size (file),
                                     dinle_media_file_get_hash (file));
+    g_print ("%s\n", query);
 
     int result = sqlite3_get_table (priv->db, query, &table, &rows, &columns, &errormsg);
     sqlite3_free_table (table);
     g_free (query);
+    g_free (efile);
 
     if (result != SQLITE_OK)
         g_warning ("sqlite error happened: %s\n",errormsg);
@@ -206,8 +209,11 @@ _get_file_by_name (DinleDb *db, const gchar *name)
 
     gchar **table;
     gint rows, cols;
+    gchar *efile;
 
-    gchar *query = g_strdup_printf (FILES_TABLE_GET_BY_NAME, name);
+    gchar *query = g_strdup_printf (FILES_TABLE_GET_BY_NAME,
+                                    efile = g_strescape (name, NULL));
+    g_free (efile);
 
     int result = sqlite3_get_table (priv->db, query, &table, &rows, &cols, NULL);
     if (rows >= 1) {
@@ -215,6 +221,8 @@ _get_file_by_name (DinleDb *db, const gchar *name)
         mf = dinle_media_file_new ();
         dinle_media_file_set_with_hash_size (mf, table[cols], table[cols+2], g_ascii_strtoll(table[cols+1], NULL, 10));
     }
+
+    g_free (query);
 
     return mf;
 }
@@ -226,7 +234,10 @@ _remove_file (DinleDb *db, DinleMediaFile *file)
     DinleDbSqlitePrivate *priv = DB_SQLITE_PRIVATE (db);
     g_return_val_if_fail (priv->db, FALSE);
 
-    gchar *query = g_strdup_printf (FILES_TABLE_REMOVE, dinle_media_file_get_path (file));
+    gchar *efile;
+    gchar *query = g_strdup_printf (FILES_TABLE_REMOVE,
+                                    efile = g_strescape (dinle_media_file_get_path (file), NULL));
+    g_free (efile);
 
     int result = sqlite3_exec (priv->db, query, NULL, NULL, NULL);
 
