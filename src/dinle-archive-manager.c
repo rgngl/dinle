@@ -284,7 +284,15 @@ _get_from_db_cb (const gchar *file, GType objtype, gpointer data)
     g_return_if_fail (DINLE_IS_ARCHIVE_MANAGER (instance));
     DinleArchiveManagerPrivate *priv = ARCHIVE_MANAGER_PRIVATE (instance);
 
-    dinle_db_get_file_by_name (priv->db, file);
+    DinleMediaFile *mf = dinle_db_get_file_by_name (priv->db, file);
+    DinleMediaFile *mf2 = dinle_media_file_new ();
+    dinle_media_file_set (mf2, file);
+    if (dinle_media_file_get_size (mf) == dinle_media_file_get_size (mf2)) {
+        /*g_print ("size of the file matches the one in the database.\n");*/
+    } else {
+        dinle_db_remove_file (priv->db, mf);
+        dinle_db_add_file (priv->db, mf2);
+    }
 }
 
 DinleArchiveManager *

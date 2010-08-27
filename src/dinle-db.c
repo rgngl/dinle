@@ -85,6 +85,7 @@ dinle_db_class_init (DinleDbClass *klass)
     klass->set_db = NULL;
     klass->add_file = NULL;
     klass->get_file_by_name = NULL;
+    klass->remove_file = NULL;
     klass->unset = NULL;
     klass->drop = NULL;
     klass->file_count = NULL;
@@ -136,6 +137,17 @@ dinle_db_get_file_by_name (DinleDb *db, const gchar *name)
 
     g_critical ("Pure virtual function get_file_by_name_called...\n");
     return NULL;
+}
+
+gboolean dinle_db_remove_file (DinleDb *db, DinleMediaFile *file)
+{
+    g_return_val_if_fail (DINLE_IS_DB (db), FALSE);
+
+    if (DINLE_DB_GET_CLASS (db)->remove_file)
+        return DINLE_DB_GET_CLASS (db)->remove_file (db, file);
+
+    g_critical ("Pure virtual function remove_file called...\n");
+    return FALSE;
 }
 
 gboolean dinle_db_unset (DinleDb *db)

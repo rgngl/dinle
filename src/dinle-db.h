@@ -66,6 +66,7 @@ struct _DinleDbClass
     gboolean (*set_db) (DinleDb *db, const gchar *name);
     gboolean (*add_file) (DinleDb *db, DinleMediaFile *file);
     DinleMediaFile* (*get_file_by_name) (DinleDb *db, const gchar *name);
+    gboolean (*remove_file) (DinleDb *db, DinleMediaFile *file);
     gboolean (*unset) (DinleDb *db);
     gboolean (*drop) (DinleDb *db);
     gint (*file_count) (DinleDb *db);
@@ -77,6 +78,7 @@ DinleDb *dinle_db_new (void);
 gboolean dinle_db_set_db (DinleDb *db, const gchar *name);
 gboolean dinle_db_add_file (DinleDb *db, DinleMediaFile *file);
 DinleMediaFile* dinle_db_get_file_by_name (DinleDb *db, const gchar *name);
+gboolean dinle_db_remove_file (DinleDb *db, DinleMediaFile *file);
 gboolean dinle_db_unset (DinleDb *db);
 gboolean dinle_db_drop (DinleDb *db);
 gint dinle_db_file_count (DinleDb *db);

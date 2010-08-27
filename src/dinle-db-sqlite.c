@@ -32,6 +32,7 @@ G_DEFINE_TYPE (DinleDbSqlite, dinle_db_sqlite, DINLE_TYPE_DB)
                            " size INTEGER, hash TEXT"
 #define FILES_TABLE_ADD "INSERT INTO \"" FILES_TABLE "\" "\
                         "VALUES ('%s', %d, '%s');"
+#define FILES_TABLE_REMOVE "DELETE FROM " FILES_TABLE "WHERE path='%s';"
 #define FILES_TABLE_GET_BY_NAME "SELECT path,size,hash FROM " FILES_TABLE " WHERE path='%s';"
 
 #define TABLE_CHECK_QUERY "SELECT name FROM sqlite_master WHERE type='table' AND name='%s';"
@@ -46,6 +47,7 @@ struct _DinleDbSqlitePrivate
 
 static gboolean _set_db (DinleDb *db, const gchar *name);
 static gboolean _add_file (DinleDb *db, DinleMediaFile *file);
+static gboolean _remove_file (DinleDb *db, DinleMediaFile *file);
 static DinleMediaFile* _get_file_by_name (DinleDb *db, const gchar *file);
 static gboolean _unset (DinleDb *db);
 static gboolean _drop (DinleDb *db);
@@ -143,6 +145,7 @@ dinle_db_sqlite_class_init (DinleDbSqliteClass *klass)
     parent_class->drop = _drop;
     parent_class->file_count = _file_count;
     parent_class->get_file_by_name = _get_file_by_name;
+    parent_class->remove_file = _remove_file;
 }
 
 static void
@@ -214,6 +217,22 @@ _get_file_by_name (DinleDb *db, const gchar *name)
     }
 
     return mf;
+}
+
+static gboolean
+_remove_file (DinleDb *db, DinleMediaFile *file)
+{
+    g_return_val_if_fail (DINLE_IS_DB_SQLITE (db), FALSE);
+    DinleDbSqlitePrivate *priv = DB_SQLITE_PRIVATE (db);
+    g_return_val_if_fail (priv->db, FALSE);
+
+    gchar *query = g_strdup_printf (FILES_TABLE_REMOVE, dinle_media_file_get_path (file));
+
+    int result = sqlite3_exec (priv->db, query, NULL, NULL, NULL);
+
+    g_free (query);
+
+    return (result == SQLITE_OK);
 }
 
 static gboolean
