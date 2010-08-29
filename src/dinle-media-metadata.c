@@ -75,50 +75,11 @@ dinle_media_metadata_get_property (GObject    *object,
 
     gchar *field = NULL;
 
-    switch (property_id)
-    {
-        case PROP_ARTIST:
-            field = g_hash_table_lookup (priv->fields, prop_names [PROP_ARTIST]);
+    if (property_id > PROP_0 && property_id < PROP_NUMBER) {
+            field = g_hash_table_lookup (priv->fields, prop_names [property_id]);
             g_value_set_string (value, field);
-            break;
-        case PROP_ALBUM:
-            field = g_hash_table_lookup (priv->fields, prop_names [PROP_ALBUM]);
-            g_value_set_string (value, field);
-            break;
-        case PROP_TITLE:
-            field = g_hash_table_lookup (priv->fields, prop_names [PROP_TITLE]);
-            g_value_set_string (value, field);
-            break;
-        case PROP_GENRE:
-            field = g_hash_table_lookup (priv->fields, prop_names [PROP_GENRE]);
-            g_value_set_string (value, field);
-            break;
-        case PROP_LENGTH:
-            field = g_hash_table_lookup (priv->fields, prop_names [PROP_LENGTH]);
-            g_value_set_string (value, field);
-            break;
-        case PROP_YEAR:
-            field = g_hash_table_lookup (priv->fields, prop_names [PROP_YEAR]);
-            g_value_set_string (value, field);
-            break;
-        case PROP_TRACK:
-            field = g_hash_table_lookup (priv->fields, prop_names [PROP_TRACK]);
-            g_value_set_string (value, field);
-            break;
-        case PROP_TRACKS:
-            field = g_hash_table_lookup (priv->fields, prop_names [PROP_TRACKS]);
-            g_value_set_string (value, field);
-            break;
-        case PROP_DISCNO:
-            field = g_hash_table_lookup (priv->fields, prop_names [PROP_DISCNO]);
-            g_value_set_string (value, field);
-            break;
-        case PROP_DISCS:
-            field = g_hash_table_lookup (priv->fields, prop_names [PROP_DISCS]);
-            g_value_set_string (value, field);
-            break;
-        default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+    } else {
+        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
     }
 }
 
@@ -134,100 +95,16 @@ dinle_media_metadata_set_property (GObject      *object,
 
     gchar *field = NULL;
 
-    switch (property_id)
-    {
-        case PROP_ARTIST:
-            field = g_hash_table_lookup (priv->fields, prop_names [PROP_ARTIST]);
-            g_hash_table_remove (priv->fields, prop_names [PROP_ARTIST]);
-            g_free (field);
-            if (!g_value_get_string (value))
-                break;
-            g_hash_table_insert (priv->fields, (gpointer) prop_names [PROP_ARTIST],
-                    g_value_dup_string (value));
-            break;
-        case PROP_ALBUM:
-            field = g_hash_table_lookup (priv->fields, prop_names [PROP_ALBUM]);
-            g_hash_table_remove (priv->fields, prop_names [PROP_ALBUM]);
-            g_free (field);
-            if (!g_value_get_string (value))
-                break;
-            g_hash_table_insert (priv->fields, (gpointer) prop_names [PROP_ALBUM],
-                    g_value_dup_string (value));
-            break;
-        case PROP_TITLE:
-            field = g_hash_table_lookup (priv->fields, prop_names [PROP_TITLE]);
-            g_hash_table_remove (priv->fields, prop_names [PROP_TITLE]);
-            g_free (field);
-            if (!g_value_get_string (value))
-                break;
-            g_hash_table_insert (priv->fields, (gpointer) prop_names [PROP_TITLE],
-                    g_value_dup_string (value));
-            break;
-        case PROP_GENRE:
-            field = g_hash_table_lookup (priv->fields, prop_names [PROP_GENRE]);
-            g_hash_table_remove (priv->fields, prop_names [PROP_GENRE]);
-            g_free (field);
-            if (!g_value_get_string (value))
-                break;
-            g_hash_table_insert (priv->fields, (gpointer) prop_names [PROP_GENRE],
-                    g_value_dup_string (value));
-            break;
-        case PROP_LENGTH:
-            field = g_hash_table_lookup (priv->fields, prop_names [PROP_LENGTH]);
-            g_hash_table_remove (priv->fields, prop_names [PROP_LENGTH]);
-            g_free (field);
-            if (!g_value_get_string (value))
-                break;
-            g_hash_table_insert (priv->fields, (gpointer) prop_names [PROP_LENGTH],
-                    g_value_dup_string (value));
-            break;
-        case PROP_YEAR:
-            field = g_hash_table_lookup (priv->fields, prop_names [PROP_YEAR]);
-            g_hash_table_remove (priv->fields, prop_names [PROP_YEAR]);
-            g_free (field);
-            if (!g_value_get_string (value))
-                break;
-            g_hash_table_insert (priv->fields, (gpointer) prop_names [PROP_YEAR],
-                    g_value_dup_string (value));
-            break;
-        case PROP_TRACK:
-            field = g_hash_table_lookup (priv->fields, prop_names [PROP_TRACK]);
-            g_hash_table_remove (priv->fields, prop_names [PROP_TRACK]);
-            g_free (field);
-            if (!g_value_get_string (value))
-                break;
-            g_hash_table_insert (priv->fields, (gpointer) prop_names [PROP_TRACK],
-                    g_value_dup_string (value));
-            break;
-        case PROP_TRACKS:
-            field = g_hash_table_lookup (priv->fields, prop_names [PROP_TRACKS]);
-            g_hash_table_remove (priv->fields, prop_names [PROP_TRACKS]);
-            g_free (field);
-            if (!g_value_get_string (value))
-                break;
-            g_hash_table_insert (priv->fields, (gpointer) prop_names [PROP_TRACKS],
-                    g_value_dup_string (value));
-            break;
-        case PROP_DISCNO:
-            field = g_hash_table_lookup (priv->fields, prop_names [PROP_DISCNO]);
-            g_hash_table_remove (priv->fields, prop_names [PROP_DISCNO]);
-            g_free (field);
-            if (!g_value_get_string (value))
-                break;
-            g_hash_table_insert (priv->fields, (gpointer) prop_names [PROP_DISCNO],
-                    g_value_dup_string (value));
-            break;
-        case PROP_DISCS:
-            field = g_hash_table_lookup (priv->fields, prop_names [PROP_DISCS]);
-            g_hash_table_remove (priv->fields, prop_names [PROP_DISCS]);
-            g_free (field);
-            if (!g_value_get_string (value))
-                break;
-            g_hash_table_insert (priv->fields, (gpointer) prop_names [PROP_DISCS],
-                    g_value_dup_string (value));
-            break;
-        default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+    if ( property_id > PROP_0 && property_id < PROP_NUMBER) {
+        field = g_hash_table_lookup (priv->fields, prop_names [property_id]);
+        g_hash_table_remove (priv->fields, prop_names [property_id]);
+        g_free (field);
+        if (!g_value_get_string (value))
+            return;
+        g_hash_table_insert (priv->fields, (gpointer) prop_names [property_id],
+                g_value_dup_string (value));
+    } else {
+        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
     }
 }
 

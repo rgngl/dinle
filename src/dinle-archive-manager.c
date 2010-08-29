@@ -205,6 +205,7 @@ _update_database (void)
     const gchar *media_root = g_value_get_string (&media_root_prop);
 
     /* check for files that no longer exist and remove them. */
+    g_print ("checking non-existent files.\n");
     gchar **file_list = dinle_db_get_files (priv->db);
     int i = 0;
     while (file_list && file_list[i]) {
@@ -216,9 +217,11 @@ _update_database (void)
     g_strfreev (file_list);
 
     /* add recently appeared files to the db. */
+    g_print ("adding recently added tracks to the db.\n");
     _traverse_directory (media_root, _add_new_files_cb, NULL);
 
     /* check for size change in existent files. */
+    g_print ("checking changes in known files.\n");
     _traverse_directory (media_root, _get_from_db_cb, NULL);
 
     g_value_unset (&media_root_prop);
