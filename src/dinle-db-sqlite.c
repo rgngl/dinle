@@ -34,6 +34,7 @@ G_DEFINE_TYPE (DinleDbSqlite, dinle_db_sqlite, DINLE_TYPE_DB)
                         "VALUES ('%q', %d, '%q');"
 #define FILES_TABLE_REMOVE "DELETE FROM " FILES_TABLE "WHERE path='%q';"
 #define FILES_TABLE_GET_BY_NAME "SELECT path,size,hash FROM " FILES_TABLE " WHERE path='%q';"
+#define FILES_TABLE_GET_FILES "SELECT path FROM " FILES_TABLE "; "
 
 #define METADATA_TABLE "metadata"
 #define METADATA_TABLE_FIELDS "path TEXT, field TEXT, value TEXT, PRIMARY KEY (path, field)"
@@ -54,8 +55,10 @@ struct _DinleDbSqlitePrivate
 
 static gboolean _set_db (DinleDb *db, const gchar *name);
 static gboolean _add_file (DinleDb *db, DinleMediaFile *file);
-static gboolean _remove_file (DinleDb *db, DinleMediaFile *file);
+static gboolean _remove_file (DinleDb *db, const gchar *file);
 static DinleMediaFile* _get_file_by_name (DinleDb *db, const gchar *file);
+static gchar** _get_files (DinleDb *db);
+static gboolean _file_exists (DinleDb *db, const gchar *file);
 static gboolean _unset (DinleDb *db);
 static gboolean _drop (DinleDb *db);
 static gint _file_count (DinleDb *db);
@@ -152,6 +155,8 @@ dinle_db_sqlite_class_init (DinleDbSqliteClass *klass)
     parent_class->drop = _drop;
     parent_class->file_count = _file_count;
     parent_class->get_file_by_name = _get_file_by_name;
+    parent_class->get_files = _get_files;
+    parent_class->file_exists = _file_exists;
     parent_class->remove_file = _remove_file;
 }
 
@@ -204,7 +209,7 @@ _add_file (DinleDb *db, DinleMediaFile *file)
         return FALSE;
     }
 
-    DinleMediaMetadata *md = dinle_media_file_get_medatada (file);
+    DinleMediaMetadata *md = dinle_media_file_get_metadata (file);
 
     return TRUE;
 }
@@ -231,20 +236,71 @@ _get_file_by_name (DinleDb *db, const gchar *name)
         dinle_media_file_set_with_hash_size (mf, table[cols], table[cols+2], g_ascii_strtoll(table[cols+1], NULL, 10));
     }
 
+    sqlite3_free_table (table);
     sqlite3_free (query);
 
     return mf;
 }
 
+static gchar **
+_get_files (DinleDb *db)
+{
+    gchar **list = NULL;
+
+    g_return_val_if_fail (DINLE_IS_DB_SQLITE (db), NULL);
+    DinleDbSqlitePrivate *priv = DB_SQLITE_PRIVATE (db);
+    g_return_val_if_fail (priv->db, NULL);
+
+    gchar **table;
+    gint rows, cols;
+
+    int result = sqlite3_get_table (priv->db, FILES_TABLE_GET_FILES, &table, &rows, &cols, NULL);
+    if (rows >= 1) {
+        list = g_malloc0 (sizeof(gchar*) * rows);
+        int i = 1;
+        while (table[i]) {
+            list [i-1] = g_strdup (table[i]);
+            i++;
+        }
+    }
+
+    sqlite3_free_table (table);
+
+    return list;
+}
+
 static gboolean
-_remove_file (DinleDb *db, DinleMediaFile *file)
+_file_exists (DinleDb *db, const gchar *file)
+{
+    g_return_val_if_fail (DINLE_IS_DB_SQLITE (db), FALSE);
+    DinleDbSqlitePrivate *priv = DB_SQLITE_PRIVATE (db);
+    g_return_val_if_fail (priv->db, FALSE);
+
+    gboolean exists = FALSE;
+
+    gchar **table;
+    gint rows, cols;
+
+    gchar *query = sqlite3_mprintf (FILES_TABLE_GET_BY_NAME, file);
+    int result = sqlite3_get_table (priv->db, query, &table, &rows, &cols, NULL);
+    if (rows > 0) {
+        exists = TRUE;
+    }
+    sqlite3_free_table (table);
+    sqlite3_free (query);
+
+    return exists;
+}
+
+static gboolean
+_remove_file (DinleDb *db, const gchar *file)
 {
     g_return_val_if_fail (DINLE_IS_DB_SQLITE (db), FALSE);
     DinleDbSqlitePrivate *priv = DB_SQLITE_PRIVATE (db);
     g_return_val_if_fail (priv->db, FALSE);
 
     gchar *query = sqlite3_mprintf (FILES_TABLE_REMOVE,
-                                    dinle_media_file_get_path (file));
+                                    file);
 
     int result = sqlite3_exec (priv->db, query, NULL, NULL, NULL);
 

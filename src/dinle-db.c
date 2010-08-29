@@ -85,6 +85,7 @@ dinle_db_class_init (DinleDbClass *klass)
     klass->set_db = NULL;
     klass->add_file = NULL;
     klass->get_file_by_name = NULL;
+    klass->get_files = NULL;
     klass->remove_file = NULL;
     klass->unset = NULL;
     klass->drop = NULL;
@@ -95,12 +96,6 @@ static void
 dinle_db_init (DinleDb *self)
 {
     self->priv = DB_PRIVATE (self);
-}
-
-DinleDb *
-dinle_db_new (void)
-{
-    return g_object_new (DINLE_TYPE_DB, NULL);
 }
 
 gboolean
@@ -139,7 +134,31 @@ dinle_db_get_file_by_name (DinleDb *db, const gchar *name)
     return NULL;
 }
 
-gboolean dinle_db_remove_file (DinleDb *db, DinleMediaFile *file)
+gchar **
+dinle_db_get_files (DinleDb *db)
+{
+    g_return_val_if_fail (DINLE_IS_DB (db), NULL);
+
+    if (DINLE_DB_GET_CLASS (db)->get_files)
+        return DINLE_DB_GET_CLASS (db)->get_files (db);
+
+    g_critical ("Pure virtual function get_files...\n");
+    return NULL;
+}
+
+gboolean
+dinle_db_file_exists (DinleDb *db, const gchar *name)
+{
+    g_return_val_if_fail (DINLE_IS_DB (db), FALSE);
+
+    if (DINLE_DB_GET_CLASS (db)->file_exists)
+        return DINLE_DB_GET_CLASS (db)->file_exists (db, name);
+
+    g_critical ("Pure virtual function file_exists called...\n");
+    return FALSE;
+}
+
+gboolean dinle_db_remove_file (DinleDb *db, const gchar *file)
 {
     g_return_val_if_fail (DINLE_IS_DB (db), FALSE);
 

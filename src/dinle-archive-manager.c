@@ -53,6 +53,7 @@ static void _traverse_directory (const gchar *path,  _traverse_callback cb, gpoi
 static void _traverse_cb (const gchar *file, GType objtype, gpointer data);
 static void _count_files_cb (const gchar *file, GType objtype, gpointer data);
 static void _get_from_db_cb (const gchar *file, GType objtype, gpointer data);
+static void _add_new_files_cb (const gchar *file, GType objtype, gpointer data);
 
 static void
 dinle_archive_manager_get_property (GObject    *object,
@@ -203,7 +204,21 @@ _update_database (void)
     g_object_get_property (G_OBJECT (cm), "media-root", &media_root_prop);
     const gchar *media_root = g_value_get_string (&media_root_prop);
 
+    /* check for files that no longer exist and remove them. */
+    gchar **file_list = dinle_db_get_files (priv->db);
+    int i = 0;
+    while (file_list && file_list[i]) {
+        if (!g_file_test (file_list[i], G_FILE_TEST_EXISTS)) {
+            dinle_db_remove_file (priv->db, file_list[i]);
+        }
+        i++;
+    }
+    g_strfreev (file_list);
 
+    /* add recently appeared files to the db. */
+    _traverse_directory (media_root, _add_new_files_cb, NULL);
+
+    /* check for size change in existent files. */
     _traverse_directory (media_root, _get_from_db_cb, NULL);
 
     g_value_unset (&media_root_prop);
@@ -292,13 +307,28 @@ _get_from_db_cb (const gchar *file, GType objtype, gpointer data)
         /* if the file size haven't changed, do nothing. */
         /*g_print ("size of the file matches the one in the database.\n");*/
     } else {
-        dinle_db_remove_file (priv->db, mf);
+        dinle_db_remove_file (priv->db, dinle_media_file_get_path (mf));
         dinle_db_add_file (priv->db, mf2);
     }
 
     if (mf)
         g_object_unref (G_OBJECT (mf));
     g_object_unref (mf2);
+}
+
+static void
+_add_new_files_cb (const gchar *file, GType objtype, gpointer data)
+{
+    g_return_if_fail (DINLE_IS_ARCHIVE_MANAGER (instance));
+    DinleArchiveManagerPrivate *priv = ARCHIVE_MANAGER_PRIVATE (instance);
+
+    if (!dinle_db_file_exists (priv->db, file)) {
+        DinleMediaFile *mf = g_object_new (objtype, NULL);
+        dinle_media_file_set (mf, file);
+        if (!dinle_db_add_file (priv->db, mf))
+            g_warning ("couldn't add to db...\n");
+        g_object_unref (mf);
+    }
 }
 
 DinleArchiveManager *
