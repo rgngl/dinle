@@ -12,3 +12,4 @@ config.h.in~
 config.sub
 configure
 missing
+config.log
