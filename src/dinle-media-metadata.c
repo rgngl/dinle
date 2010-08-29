@@ -26,16 +26,7 @@ G_DEFINE_TYPE (DinleMediaMetadata, dinle_media_metadata, G_TYPE_OBJECT)
 
 struct _DinleMediaMetadataPrivate
 {
-    gchar *artist;
-    gchar *album;
-    gchar *title;
-    gchar *genre;
-    gchar *year;
-    gchar *track;
-    gchar *tracks;
-    gchar *length;
-    gchar *discno;
-    gchar *discs;
+    GHashTable *fields;
 };
 
 enum {
@@ -55,6 +46,23 @@ enum {
     PROP_NUMBER
 };
 
+static const gchar* prop_names [] = {
+    "0",
+
+    "artist",
+    "album",
+    "title",
+    "genre",
+    "length",
+    "year",
+    "track",
+    "tracks",
+    "discno",
+    "discs",
+
+    NULL
+};
+
 static void
 dinle_media_metadata_get_property (GObject    *object,
                                    guint       property_id,
@@ -65,37 +73,49 @@ dinle_media_metadata_get_property (GObject    *object,
 
     DinleMediaMetadataPrivate *priv = MEDIA_METADATA_PRIVATE (object);
 
+    gchar *field = NULL;
+
     switch (property_id)
     {
         case PROP_ARTIST:
-            g_value_set_string (value, priv->artist);
+            field = g_hash_table_lookup (priv->fields, prop_names [PROP_ARTIST]);
+            g_value_set_string (value, field);
             break;
         case PROP_ALBUM:
-            g_value_set_string (value, priv->album);
+            field = g_hash_table_lookup (priv->fields, prop_names [PROP_ALBUM]);
+            g_value_set_string (value, field);
             break;
         case PROP_TITLE:
-            g_value_set_string (value, priv->title);
+            field = g_hash_table_lookup (priv->fields, prop_names [PROP_TITLE]);
+            g_value_set_string (value, field);
             break;
         case PROP_GENRE:
-            g_value_set_string (value, priv->genre);
+            field = g_hash_table_lookup (priv->fields, prop_names [PROP_GENRE]);
+            g_value_set_string (value, field);
             break;
         case PROP_LENGTH:
-            g_value_set_string (value, priv->length);
+            field = g_hash_table_lookup (priv->fields, prop_names [PROP_LENGTH]);
+            g_value_set_string (value, field);
             break;
         case PROP_YEAR:
-            g_value_set_string (value, priv->year);
+            field = g_hash_table_lookup (priv->fields, prop_names [PROP_YEAR]);
+            g_value_set_string (value, field);
             break;
         case PROP_TRACK:
-            g_value_set_string (value, priv->track);
+            field = g_hash_table_lookup (priv->fields, prop_names [PROP_TRACK]);
+            g_value_set_string (value, field);
             break;
         case PROP_TRACKS:
-            g_value_set_string (value, priv->tracks);
+            field = g_hash_table_lookup (priv->fields, prop_names [PROP_TRACKS]);
+            g_value_set_string (value, field);
             break;
         case PROP_DISCNO:
-            g_value_set_string (value, priv->discno);
+            field = g_hash_table_lookup (priv->fields, prop_names [PROP_DISCNO]);
+            g_value_set_string (value, field);
             break;
         case PROP_DISCS:
-            g_value_set_string (value, priv->discs);
+            field = g_hash_table_lookup (priv->fields, prop_names [PROP_DISCS]);
+            g_value_set_string (value, field);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -104,55 +124,107 @@ dinle_media_metadata_get_property (GObject    *object,
 
 static void
 dinle_media_metadata_set_property (GObject      *object,
-                                   guint         property_id,
-                                   const GValue *value,
-                                   GParamSpec   *pspec)
+        guint         property_id,
+        const GValue *value,
+        GParamSpec   *pspec)
 {
     g_return_if_fail (DINLE_IS_MEDIA_METADATA (object));
 
     DinleMediaMetadataPrivate *priv = MEDIA_METADATA_PRIVATE (object);
 
+    gchar *field = NULL;
+
     switch (property_id)
     {
         case PROP_ARTIST:
-            g_free (priv->artist);
-            priv->artist = g_value_dup_string (value);
+            field = g_hash_table_lookup (priv->fields, prop_names [PROP_ARTIST]);
+            g_hash_table_remove (priv->fields, prop_names [PROP_ARTIST]);
+            g_free (field);
+            if (!g_value_get_string (value))
+                break;
+            g_hash_table_insert (priv->fields, (gpointer) prop_names [PROP_ARTIST],
+                    g_value_dup_string (value));
             break;
         case PROP_ALBUM:
-            g_free (priv->album);
-            priv->album = g_value_dup_string (value);
+            field = g_hash_table_lookup (priv->fields, prop_names [PROP_ALBUM]);
+            g_hash_table_remove (priv->fields, prop_names [PROP_ALBUM]);
+            g_free (field);
+            if (!g_value_get_string (value))
+                break;
+            g_hash_table_insert (priv->fields, (gpointer) prop_names [PROP_ALBUM],
+                    g_value_dup_string (value));
             break;
         case PROP_TITLE:
-            g_free (priv->title);
-            priv->title = g_value_dup_string (value);
+            field = g_hash_table_lookup (priv->fields, prop_names [PROP_TITLE]);
+            g_hash_table_remove (priv->fields, prop_names [PROP_TITLE]);
+            g_free (field);
+            if (!g_value_get_string (value))
+                break;
+            g_hash_table_insert (priv->fields, (gpointer) prop_names [PROP_TITLE],
+                    g_value_dup_string (value));
             break;
         case PROP_GENRE:
-            g_free (priv->genre);
-            priv->genre = g_value_dup_string (value);
+            field = g_hash_table_lookup (priv->fields, prop_names [PROP_GENRE]);
+            g_hash_table_remove (priv->fields, prop_names [PROP_GENRE]);
+            g_free (field);
+            if (!g_value_get_string (value))
+                break;
+            g_hash_table_insert (priv->fields, (gpointer) prop_names [PROP_GENRE],
+                    g_value_dup_string (value));
             break;
         case PROP_LENGTH:
-            g_free (priv->length);
-            priv->length = g_value_dup_string (value);
+            field = g_hash_table_lookup (priv->fields, prop_names [PROP_LENGTH]);
+            g_hash_table_remove (priv->fields, prop_names [PROP_LENGTH]);
+            g_free (field);
+            if (!g_value_get_string (value))
+                break;
+            g_hash_table_insert (priv->fields, (gpointer) prop_names [PROP_LENGTH],
+                    g_value_dup_string (value));
             break;
         case PROP_YEAR:
-            g_free (priv->year);
-            priv->year = g_value_dup_string (value);
+            field = g_hash_table_lookup (priv->fields, prop_names [PROP_YEAR]);
+            g_hash_table_remove (priv->fields, prop_names [PROP_YEAR]);
+            g_free (field);
+            if (!g_value_get_string (value))
+                break;
+            g_hash_table_insert (priv->fields, (gpointer) prop_names [PROP_YEAR],
+                    g_value_dup_string (value));
             break;
         case PROP_TRACK:
-            g_free (priv->track);
-            priv->track = g_value_dup_string (value);
+            field = g_hash_table_lookup (priv->fields, prop_names [PROP_TRACK]);
+            g_hash_table_remove (priv->fields, prop_names [PROP_TRACK]);
+            g_free (field);
+            if (!g_value_get_string (value))
+                break;
+            g_hash_table_insert (priv->fields, (gpointer) prop_names [PROP_TRACK],
+                    g_value_dup_string (value));
             break;
         case PROP_TRACKS:
-            g_free (priv->tracks);
-            priv->tracks = g_value_dup_string (value);
+            field = g_hash_table_lookup (priv->fields, prop_names [PROP_TRACKS]);
+            g_hash_table_remove (priv->fields, prop_names [PROP_TRACKS]);
+            g_free (field);
+            if (!g_value_get_string (value))
+                break;
+            g_hash_table_insert (priv->fields, (gpointer) prop_names [PROP_TRACKS],
+                    g_value_dup_string (value));
             break;
         case PROP_DISCNO:
-            g_free (priv->discno);
-            priv->discno = g_value_dup_string (value);
+            field = g_hash_table_lookup (priv->fields, prop_names [PROP_DISCNO]);
+            g_hash_table_remove (priv->fields, prop_names [PROP_DISCNO]);
+            g_free (field);
+            if (!g_value_get_string (value))
+                break;
+            g_hash_table_insert (priv->fields, (gpointer) prop_names [PROP_DISCNO],
+                    g_value_dup_string (value));
             break;
         case PROP_DISCS:
-            g_free (priv->discs);
-            priv->discs = g_value_dup_string (value);
+            field = g_hash_table_lookup (priv->fields, prop_names [PROP_DISCS]);
+            g_hash_table_remove (priv->fields, prop_names [PROP_DISCS]);
+            g_free (field);
+            if (!g_value_get_string (value))
+                break;
+            g_hash_table_insert (priv->fields, (gpointer) prop_names [PROP_DISCS],
+                    g_value_dup_string (value));
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -172,16 +244,14 @@ dinle_media_metadata_finalize (GObject *object)
 
     DinleMediaMetadataPrivate *priv = MEDIA_METADATA_PRIVATE (object);
 
-    g_free (priv->artist);
-    g_free (priv->album);
-    g_free (priv->title);
-    g_free (priv->genre);
-    g_free (priv->year);
-    g_free (priv->length);
-    g_free (priv->track);
-    g_free (priv->tracks);
-    g_free (priv->discs);
-    g_free (priv->discno);
+    GHashTableIter iter;
+    gpointer key, value;
+    g_hash_table_iter_init (&iter, priv->fields);
+
+    while (g_hash_table_iter_next (&iter, &key, &value)) {
+        g_free (value);
+    }
+    g_hash_table_destroy (priv->fields);
 
     G_OBJECT_CLASS (dinle_media_metadata_parent_class)->finalize (object);
 }
@@ -295,20 +365,33 @@ dinle_media_metadata_init (DinleMediaMetadata *self)
 {
     self->priv = MEDIA_METADATA_PRIVATE (self);
 
-    self->priv->artist = NULL;
-    self->priv->album = NULL;
-    self->priv->title = NULL;
-    self->priv->genre = NULL;
-    self->priv->length = NULL;
-    self->priv->track = NULL;
-    self->priv->tracks = NULL;
-    self->priv->year = NULL;
-    self->priv->discs = NULL;
-    self->priv->discno = NULL;
+    self->priv->fields = g_hash_table_new (g_str_hash, g_str_equal);
 }
 
 DinleMediaMetadata *
 dinle_media_metadata_new (void)
 {
     return g_object_new (DINLE_TYPE_MEDIA_METADATA, NULL);
+}
+
+gchar **
+dinle_media_metadata_get_field_value_list (DinleMediaMetadata *md)
+{
+    g_return_val_if_fail (DINLE_IS_MEDIA_METADATA (md), NULL);
+    DinleMediaMetadataPrivate *priv = MEDIA_METADATA_PRIVATE (md);
+
+    gchar **list = g_malloc0 (sizeof (gchar*) * g_hash_table_size (priv->fields) * 2 + 1);
+
+    GHashTableIter iter;
+    gpointer key, value;
+    g_hash_table_iter_init (&iter, priv->fields);
+
+    gint i = 0;
+    while (g_hash_table_iter_next (&iter, &key, &value)) {
+        list[i] = g_strdup (key);
+        list[i+1] = g_strdup (value);
+        i += 2;
+    }
+
+    return list;
 }

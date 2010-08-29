@@ -65,6 +65,7 @@ struct _DinleMediaMetadataClass
 GType dinle_media_metadata_get_type (void) G_GNUC_CONST;
 
 DinleMediaMetadata *dinle_media_metadata_new (void);
+gchar **dinle_media_metadata_get_field_value_list (DinleMediaMetadata *md);
 
 G_END_DECLS
 

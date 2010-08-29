@@ -38,7 +38,7 @@ G_DEFINE_TYPE (DinleDbSqlite, dinle_db_sqlite, DINLE_TYPE_DB)
 
 #define METADATA_TABLE "metadata"
 #define METADATA_TABLE_FIELDS "path TEXT, field TEXT, value TEXT, PRIMARY KEY (path, field)"
-#define METADATA_TABLE_ADD "INSET INTO '" METADATA_TABLE "' "\
+#define METADATA_TABLE_ADD "INSERT INTO '" METADATA_TABLE "' "\
                            "VALUES ('%q', '%q', '%q');"
 #define METADATA_TABLE_REMOVE "DELETE FROM " METADATA_TABLE "WHERE path='%q';"
 #define METADATA_TABLE_GET_BY_NAME "SELECT path, field, value FROM " METADATA_TABLE " WHERE path='%q';"
@@ -190,9 +190,8 @@ _add_file (DinleDb *db, DinleMediaFile *file)
     g_return_val_if_fail (DINLE_IS_DB_SQLITE (db), FALSE);
     DinleDbSqlitePrivate *priv = DB_SQLITE_PRIVATE (db);
     g_return_val_if_fail (priv->db, FALSE);
+    g_return_val_if_fail (DINLE_IS_MEDIA_FILE (file), FALSE);
 
-    gchar **table;
-    gint rows, columns;
     gchar *errormsg;
 
     gchar *query = sqlite3_mprintf (FILES_TABLE_ADD,
@@ -200,8 +199,7 @@ _add_file (DinleDb *db, DinleMediaFile *file)
                                     dinle_media_file_get_size (file),
                                     dinle_media_file_get_hash (file));
 
-    int result = sqlite3_get_table (priv->db, query, &table, &rows, &columns, &errormsg);
-    sqlite3_free_table (table);
+    int result = sqlite3_exec (priv->db, query, NULL, NULL, &errormsg);
     sqlite3_free (query);
 
     if (result != SQLITE_OK) {
@@ -210,8 +208,26 @@ _add_file (DinleDb *db, DinleMediaFile *file)
     }
 
     DinleMediaMetadata *md = dinle_media_file_get_metadata (file);
+    gchar **field_list = dinle_media_metadata_get_field_value_list (md);
 
-    return TRUE;
+    int i = 0;
+    while (field_list && field_list[i]) {
+        query = sqlite3_mprintf (METADATA_TABLE_ADD,
+                                 dinle_media_file_get_path (file),
+                                 field_list[i],
+                                 field_list[i+1]);
+        result = sqlite3_exec (priv->db, query, NULL, NULL, &errormsg);
+        sqlite3_free (query);
+        i += 2;
+    }
+
+    if (result != SQLITE_OK) {
+        g_warning ("sqlite error happened: %s\n", errormsg);
+    }
+
+    g_object_unref (md);
+    g_strfreev (field_list);
+    return (result == SQLITE_OK);
 }
 
 static DinleMediaFile *
@@ -256,7 +272,7 @@ _get_files (DinleDb *db)
 
     int result = sqlite3_get_table (priv->db, FILES_TABLE_GET_FILES, &table, &rows, &cols, NULL);
     if (rows >= 1) {
-        list = g_malloc0 (sizeof(gchar*) * rows);
+        list = g_malloc0 (sizeof(gchar*) * rows + 1);
         int i = 1;
         while (table[i]) {
             list [i-1] = g_strdup (table[i]);
@@ -299,11 +315,15 @@ _remove_file (DinleDb *db, const gchar *file)
     DinleDbSqlitePrivate *priv = DB_SQLITE_PRIVATE (db);
     g_return_val_if_fail (priv->db, FALSE);
 
-    gchar *query = sqlite3_mprintf (FILES_TABLE_REMOVE,
-                                    file);
-
+    gchar *query = sqlite3_mprintf (FILES_TABLE_REMOVE, file);
     int result = sqlite3_exec (priv->db, query, NULL, NULL, NULL);
+    sqlite3_free (query);
 
+    if (result != SQLITE_OK)
+        return FALSE;
+
+    query = sqlite3_mprintf (METADATA_TABLE_REMOVE, file);
+    result = sqlite3_exec (priv->db, query, NULL, NULL, NULL);
     sqlite3_free (query);
 
     return (result == SQLITE_OK);
@@ -328,13 +348,15 @@ _drop (DinleDb *db)
     DinleDbSqlitePrivate *priv = DB_SQLITE_PRIVATE (db);
     g_return_val_if_fail (priv->db, FALSE);
 
-    gchar **table;
-    gint rows, cols;
-
     gchar *query = g_strdup_printf (TABLE_DROP_QUERY, FILES_TABLE);
+    int result = sqlite3_exec (priv->db, query, NULL, NULL, NULL);
+    g_free (query);
 
-    int result = sqlite3_get_table (priv->db, query, &table, &rows, &cols, NULL);
-    sqlite3_free_table (table);
+    if (result != SQLITE_OK)
+        return FALSE;
+
+    query = g_strdup_printf (TABLE_DROP_QUERY, METADATA_TABLE);
+    result = sqlite3_exec (priv->db, query, NULL, NULL, NULL);
     g_free (query);
 
     return (result == SQLITE_OK);
