@@ -22,6 +22,7 @@ dinled_headers = dinle-archive-manager.h \
 		 dinle-media-metadata.h \
 		 dinle-db.h \
 		 dinle-db-sqlite.h
+
 if HAVE_MP3
 dinled_SOURCES += dinle-media-file-mp3.c
 dinled_headers += dinle-media-file-mp3.h
