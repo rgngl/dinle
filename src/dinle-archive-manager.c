@@ -267,6 +267,7 @@ _traverse_cb (const gchar *file, GType objtype, gpointer data)
     (*scanned)++;
     /*g_print ("%s\t %s\t %d\t %s\n", file, sum, size, g_type_name (objtype));*/
     g_print ("%d of %d scanned                        \r", *scanned, priv->files);
+    g_object_unref (mf);
 }
 
 static void
@@ -288,11 +289,16 @@ _get_from_db_cb (const gchar *file, GType objtype, gpointer data)
     DinleMediaFile *mf2 = dinle_media_file_new ();
     dinle_media_file_set (mf2, file);
     if (dinle_media_file_get_size (mf) == dinle_media_file_get_size (mf2)) {
+        /* if the file size haven't changed, do nothing. */
         /*g_print ("size of the file matches the one in the database.\n");*/
     } else {
         dinle_db_remove_file (priv->db, mf);
         dinle_db_add_file (priv->db, mf2);
     }
+
+    if (mf)
+        g_object_unref (G_OBJECT (mf));
+    g_object_unref (mf2);
 }
 
 DinleArchiveManager *

@@ -35,6 +35,13 @@ G_DEFINE_TYPE (DinleDbSqlite, dinle_db_sqlite, DINLE_TYPE_DB)
 #define FILES_TABLE_REMOVE "DELETE FROM " FILES_TABLE "WHERE path='%q';"
 #define FILES_TABLE_GET_BY_NAME "SELECT path,size,hash FROM " FILES_TABLE " WHERE path='%q';"
 
+#define METADATA_TABLE "metadata"
+#define METADATA_TABLE_FIELDS "path TEXT, field TEXT, value TEXT, PRIMARY KEY (path, field)"
+#define METADATA_TABLE_ADD "INSET INTO '" METADATA_TABLE "' "\
+                           "VALUES ('%q', '%q', '%q');"
+#define METADATA_TABLE_REMOVE "DELETE FROM " METADATA_TABLE "WHERE path='%q';"
+#define METADATA_TABLE_GET_BY_NAME "SELECT path, field, value FROM " METADATA_TABLE " WHERE path='%q';"
+
 #define TABLE_CHECK_QUERY "SELECT name FROM sqlite_master WHERE type='table' AND name='%q';"
 #define TABLE_CREATE_QUERY "CREATE TABLE %s (%s) ;"
 #define TABLE_DROP_QUERY "DROP TABLE IF EXISTS %s ;"
@@ -163,6 +170,12 @@ _set_db (DinleDb *db, const gchar *name)
 
     int result = sqlite3_open (name, &(priv->db));
 
+    if (!_check_create_table (DINLE_DB_SQLITE (db), FILES_TABLE, FILES_TABLE_FIELDS))
+        return FALSE;
+
+    if (!_check_create_table (DINLE_DB_SQLITE (db), METADATA_TABLE, METADATA_TABLE_FIELDS))
+        return FALSE;
+
     return ( (result == SQLITE_OK) && (priv->db != NULL) );
 }
 
@@ -177,23 +190,23 @@ _add_file (DinleDb *db, DinleMediaFile *file)
     gint rows, columns;
     gchar *errormsg;
 
-    if (!_check_create_table (DINLE_DB_SQLITE (db), FILES_TABLE, FILES_TABLE_FIELDS))
-        return FALSE;
-
     gchar *query = sqlite3_mprintf (FILES_TABLE_ADD,
                                     dinle_media_file_get_path (file),
                                     dinle_media_file_get_size (file),
                                     dinle_media_file_get_hash (file));
-    g_print ("%s\n", query);
 
     int result = sqlite3_get_table (priv->db, query, &table, &rows, &columns, &errormsg);
     sqlite3_free_table (table);
     sqlite3_free (query);
 
-    if (result != SQLITE_OK)
+    if (result != SQLITE_OK) {
         g_warning ("sqlite error happened: %s\n",errormsg);
+        return FALSE;
+    }
 
-    return (result == SQLITE_OK);
+    DinleMediaMetadata *md = dinle_media_file_get_medatada (file);
+
+    return TRUE;
 }
 
 static DinleMediaFile *
