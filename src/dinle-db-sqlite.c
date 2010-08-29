@@ -26,7 +26,7 @@ G_DEFINE_TYPE (DinleDbSqlite, dinle_db_sqlite, DINLE_TYPE_DB)
 #define DB_SQLITE_PRIVATE(o) \
   (G_TYPE_INSTANCE_GET_PRIVATE ((o), DINLE_TYPE_DB_SQLITE, DinleDbSqlitePrivate))
 
-
+/*Sqlite Queries -----------------------------------------------------------*/
 #define FILES_TABLE "files"
 #define FILES_TABLE_FIELDS "path TEXT PRIMARY KEY, " \
                            " size INTEGER, hash TEXT"
@@ -42,28 +42,38 @@ G_DEFINE_TYPE (DinleDbSqlite, dinle_db_sqlite, DINLE_TYPE_DB)
                            "VALUES ('%q', '%q', '%q');"
 #define METADATA_TABLE_REMOVE "DELETE FROM " METADATA_TABLE "WHERE path='%q';"
 #define METADATA_TABLE_GET_BY_NAME "SELECT path, field, value FROM " METADATA_TABLE " WHERE path='%q';"
+#define METADATA_TABLE_GET_BY_TAGS "SELECT DISTINCT path FROM " METADATA_TABLE \
+                                   " WHERE field=='%q' and value=='%q'"
+#define METADATA_TABLE_GET_BY_TAGS_A " INTERSECT " METADATA_TABLE_GET_BY_TAGS
+#define METADATA_TABLE_GET_BY_TAGS_T " ; "
 
 #define TABLE_CHECK_QUERY "SELECT name FROM sqlite_master WHERE type='table' AND name='%q';"
 #define TABLE_CREATE_QUERY "CREATE TABLE %s (%s) ;"
 #define TABLE_DROP_QUERY "DROP TABLE IF EXISTS %s ;"
 #define TABLE_COUNT_QUERY "SELECT COUNT(*) FROM %s ;"
+/*--------------------------------------------------------------------------*/
 
 struct _DinleDbSqlitePrivate
 {
     sqlite3 *db;
 };
 
+/*Virtual function implementations------------------------------------------*/
 static gboolean _set_db (DinleDb *db, const gchar *name);
 static gboolean _add_file (DinleDb *db, DinleMediaFile *file);
 static gboolean _remove_file (DinleDb *db, const gchar *file);
 static DinleMediaFile* _get_file_by_name (DinleDb *db, const gchar *file);
+static DinleMediaFile** _search_by_tags_valist (DinleDb *db, const gchar *first_tag, va_list vars);
 static gchar** _get_files (DinleDb *db);
 static gboolean _file_exists (DinleDb *db, const gchar *file);
 static gboolean _unset (DinleDb *db);
 static gboolean _drop (DinleDb *db);
 static gint _file_count (DinleDb *db);
+/*--------------------------------------------------------------------------*/
 
+/*Utility functions---------------------------------------------------------*/
 static gboolean _check_create_table (DinleDbSqlite *db, const gchar *table_name, const gchar *fields);
+/*--------------------------------------------------------------------------*/
 
 
 /******************************************************************************/
@@ -155,6 +165,7 @@ dinle_db_sqlite_class_init (DinleDbSqliteClass *klass)
     parent_class->drop = _drop;
     parent_class->file_count = _file_count;
     parent_class->get_file_by_name = _get_file_by_name;
+    parent_class->search_by_tags_valist = _search_by_tags_valist;
     parent_class->get_files = _get_files;
     parent_class->file_exists = _file_exists;
     parent_class->remove_file = _remove_file;
@@ -249,13 +260,69 @@ _get_file_by_name (DinleDb *db, const gchar *name)
     if (rows >= 1) {
         /*g_print ("%s %s %s\n", table[cols], table[cols+1], table[cols+2]);*/
         mf = dinle_media_file_new ();
-        dinle_media_file_set_with_hash_size (mf, table[cols], table[cols+2], g_ascii_strtoll(table[cols+1], NULL, 10));
+        dinle_media_file_set_with_hash_size (mf, table[cols], table[cols+2],
+                g_ascii_strtoll(table[cols+1], NULL, 10));
     }
 
     sqlite3_free_table (table);
     sqlite3_free (query);
 
     return mf;
+}
+
+static DinleMediaFile **
+_search_by_tags_valist (DinleDb *db, const gchar *first_tag, va_list vars)
+{
+    DinleMediaFile **list = NULL;
+
+    g_return_val_if_fail (DINLE_IS_DB_SQLITE (db), NULL);
+    DinleDbSqlitePrivate *priv = DB_SQLITE_PRIVATE (db);
+    g_return_val_if_fail (priv->db, NULL);
+
+    gchar *query = g_strdup ("");
+
+    const gchar *tag = first_tag;
+    const gchar *term = va_arg (vars, const gchar *);
+
+    gchar *eq = sqlite3_mprintf (METADATA_TABLE_GET_BY_TAGS, tag, term);
+    gchar *temp = g_strconcat (query, eq, NULL);
+    sqlite3_free (eq);
+    g_free (query);
+    query = temp;
+
+    tag = va_arg (vars, const gchar *);
+    while (tag) {
+        term = va_arg (vars, const gchar *);
+
+        eq = sqlite3_mprintf (METADATA_TABLE_GET_BY_TAGS_A, tag, term);
+        temp = g_strconcat (query, eq, NULL);
+        sqlite3_free (eq);
+        g_free (query);
+        query = temp;
+
+        tag = va_arg (vars, const gchar *);
+    }
+
+    temp = g_strconcat (query, METADATA_TABLE_GET_BY_TAGS_T, NULL);
+    g_free (query);
+    query = temp;
+
+    g_print ("%s\n", query);
+
+    gchar **table = NULL;
+    gint rows, cols;
+    gchar *error_msg = NULL;
+
+    gint result = sqlite3_get_table (priv->db, query, &table, &rows, &cols, &error_msg);
+    if (result != SQLITE_OK)
+        g_print ("error happened :/ %s\n", error_msg);
+    int i;
+    g_print ("%d %d\n", rows, cols);
+    for (i = 1; i <= rows; i +=cols)
+        g_print ("%s\n", table[i]);
+
+    g_free (query);
+    return list;
 }
 
 static gchar **

@@ -16,7 +16,8 @@ dinled_SOURCES = main.c \
 		 dinle-db.c \
 		 dinle-db-sqlite.c
 
-dinled_headers = dinle-archive-manager.h \
+dinled_headers = dinle-tags.h \
+		 dinle-archive-manager.h \
 		 dinle-config-manager.h \
 		 dinle-media-file.h \
 		 dinle-media-metadata.h \

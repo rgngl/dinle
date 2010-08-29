@@ -85,6 +85,7 @@ dinle_db_class_init (DinleDbClass *klass)
     klass->set_db = NULL;
     klass->add_file = NULL;
     klass->get_file_by_name = NULL;
+    klass->search_by_tags_valist = NULL;
     klass->get_files = NULL;
     klass->remove_file = NULL;
     klass->unset = NULL;
@@ -130,8 +131,38 @@ dinle_db_get_file_by_name (DinleDb *db, const gchar *name)
     if (DINLE_DB_GET_CLASS (db)->get_file_by_name)
         return DINLE_DB_GET_CLASS (db)->get_file_by_name (db, name);
 
-    g_critical ("Pure virtual function get_file_by_name_called...\n");
+    g_critical ("Pure virtual function get_file_by_name called...\n");
     return NULL;
+}
+
+DinleMediaFile **
+dinle_db_search_by_tags_valist (DinleDb *db, const gchar *first_tag, va_list vars)
+{
+    g_return_val_if_fail (DINLE_IS_DB (db), NULL);
+
+    if (DINLE_DB_GET_CLASS (db)->search_by_tags_valist) {
+        DinleMediaFile **list = DINLE_DB_GET_CLASS (db)->search_by_tags_valist (db,
+                                                                                first_tag,
+                                                                                vars);
+        return list;
+    }
+
+    g_critical ("Pure virtual function search_by_tag called...\n");
+    return NULL;
+}
+
+DinleMediaFile **
+dinle_db_search_by_tags (DinleDb *db, const gchar *first_tag, ...)
+{
+    va_list var_args;
+
+    g_return_val_if_fail (DINLE_IS_DB (db), NULL);
+
+    va_start (var_args, first_tag);
+    DinleMediaFile **list = dinle_db_search_by_tags_valist (db, first_tag, var_args);
+    va_end (var_args);
+
+    return list;
 }
 
 gchar **

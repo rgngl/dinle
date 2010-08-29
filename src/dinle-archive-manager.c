@@ -25,6 +25,7 @@
 #include "dinle-config-manager.h"
 #include "dinle-media-file.h"
 #include "dinle-db-sqlite.h"
+#include "dinle-tags.h"
 
 #ifdef HAVE_MP3
 #include "dinle-media-file-mp3.h"
@@ -348,6 +349,10 @@ dinle_archive_manager_get (void)
             g_print ("updating db, it has %d files.\n", dinle_db_file_count (priv->db));
             _update_database ();
         }
+        dinle_db_search_by_tags (priv->db,
+                                 DINLE_TAG_ARTIST, "Dream Theater",
+                                 DINLE_TAG_ALBUM, "Falling Into Infinity",
+                                 NULL);
     }
 
     return instance;

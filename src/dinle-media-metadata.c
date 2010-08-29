@@ -18,6 +18,7 @@
 /* dinle-media-metadata.c */
 
 #include "dinle-media-metadata.h"
+#include "dinle-tags.h"
 
 G_DEFINE_TYPE (DinleMediaMetadata, dinle_media_metadata, G_TYPE_OBJECT)
 
@@ -49,16 +50,16 @@ enum {
 static const gchar* prop_names [] = {
     "0",
 
-    "artist",
-    "album",
-    "title",
-    "genre",
-    "length",
-    "year",
-    "track",
-    "tracks",
-    "discno",
-    "discs",
+    DINLE_TAG_ARTIST,
+    DINLE_TAG_ALBUM,
+    DINLE_TAG_TITLE,
+    DINLE_TAG_GENRE,
+    DINLE_TAG_LENGTH,
+    DINLE_TAG_YEAR,
+    DINLE_TAG_TRACK,
+    DINLE_TAG_TRACKS,
+    DINLE_TAG_DISCNO,
+    DINLE_TAG_DISCS,
 
     NULL
 };
