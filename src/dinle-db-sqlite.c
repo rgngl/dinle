@@ -307,8 +307,6 @@ _search_by_tags_valist (DinleDb *db, const gchar *first_tag, va_list vars)
     g_free (query);
     query = temp;
 
-    g_print ("%s\n", query);
-
     gchar **table = NULL;
     gint rows, cols;
     gchar *error_msg = NULL;
@@ -317,16 +315,15 @@ _search_by_tags_valist (DinleDb *db, const gchar *first_tag, va_list vars)
     if (result != SQLITE_OK)
         g_print ("error happened :/ %s\n", error_msg);
     int i;
-    g_print ("%d %d\n", rows, cols);
-    for (i = 1; i <= rows; i +=cols)
-        g_print ("%s\n", table[i]);
 
     if (rows >= 1) {
         list = g_malloc0 (sizeof(DinleMediaFile*)*(rows + 1));
         for (i = 1; i <= rows; i+=cols) {
+            list[i-1] = dinle_media_file_new (table[i]);
         }
     }
 
+    sqlite3_free_table (table);
     g_free (query);
     return list;
 }
