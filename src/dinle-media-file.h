@@ -69,12 +69,13 @@ struct _DinleMediaFileClass
 
 GType dinle_media_file_get_type (void) G_GNUC_CONST;
 
-DinleMediaFile *dinle_media_file_new (void);
+DinleMediaFile *dinle_media_file_new (const gchar *file);
+void dinle_media_file_initialize (void);
+gboolean dinle_is_file_supported (const gchar *file);
 const gchar *dinle_media_file_extensions(DinleMediaFile *self);
 gboolean dinle_media_file_set (DinleMediaFile *self, const gchar *file);
-gboolean dinle_media_file_set_with_hash_size (DinleMediaFile *self, const gchar *file, const gchar *hash, guint size);
+/*gboolean dinle_media_file_set_with_hash_size (DinleMediaFile *self, const gchar *file, const gchar *hash, guint size);i*/
 const gchar *dinle_media_file_get_path (DinleMediaFile *self);
-void dinle_media_file_unset (DinleMediaFile *self);
 const DinleMediaMetadata * dinle_media_file_get_metadata (DinleMediaFile *self);
 const gchar * dinle_media_file_get_hash (DinleMediaFile *self);
 guint dinle_media_file_get_size (DinleMediaFile *self);

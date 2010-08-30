@@ -259,9 +259,9 @@ _get_file_by_name (DinleDb *db, const gchar *name)
     int result = sqlite3_get_table (priv->db, query, &table, &rows, &cols, NULL);
     if (rows >= 1) {
         /*g_print ("%s %s %s\n", table[cols], table[cols+1], table[cols+2]);*/
-        mf = dinle_media_file_new ();
-        dinle_media_file_set_with_hash_size (mf, table[cols], table[cols+2],
-                g_ascii_strtoll(table[cols+1], NULL, 10));
+        mf = dinle_media_file_new (table[cols]);
+        /*dinle_media_file_set_with_hash_size (mf, table[cols], table[cols+2],*/
+                /*g_ascii_strtoll(table[cols+1], NULL, 10));*/
     }
 
     sqlite3_free_table (table);
@@ -320,6 +320,12 @@ _search_by_tags_valist (DinleDb *db, const gchar *first_tag, va_list vars)
     g_print ("%d %d\n", rows, cols);
     for (i = 1; i <= rows; i +=cols)
         g_print ("%s\n", table[i]);
+
+    if (rows >= 1) {
+        list = g_malloc0 (sizeof(DinleMediaFile*)*(rows + 1));
+        for (i = 1; i <= rows; i+=cols) {
+        }
+    }
 
     g_free (query);
     return list;

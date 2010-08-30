@@ -18,10 +18,12 @@
 /* dinle-media-file.c */
 
 #include "dinle-media-file.h"
+#include "config.h"
 
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <stdlib.h>
 
 G_DEFINE_TYPE (DinleMediaFile, dinle_media_file, G_TYPE_OBJECT)
 
@@ -38,6 +40,10 @@ struct _DinleMediaFilePrivate
     DinleMediaMetadata *md;
     guint size;
 };
+
+static GHashTable *media_formats = NULL;
+
+static void _unset (DinleMediaFile *self);
 
 
 static void
@@ -113,9 +119,66 @@ dinle_media_file_init (DinleMediaFile *self)
 }
 
 DinleMediaFile *
-dinle_media_file_new (void)
+dinle_media_file_new (const gchar *file)
 {
-    return g_object_new (DINLE_TYPE_MEDIA_FILE, NULL);
+    if (!media_formats)
+        return NULL;
+
+    const gchar *suffix = g_strrstr (file, ".");
+    suffix++;
+
+    gpointer t = g_hash_table_lookup (media_formats, suffix);
+    if (!t)
+        return NULL;
+
+    GType type = (GType) t;
+    DinleMediaFile *mf = g_object_new (type, NULL);
+    dinle_media_file_set (mf, file);
+    return mf;
+}
+
+void
+dinle_media_file_initialize (void)
+{
+    if (!media_formats) {
+        media_formats = g_hash_table_new (g_str_hash, g_str_equal);
+    }
+
+    gboolean mf_found = FALSE;
+
+    /*Add supported media file extensions.*/
+#ifdef HAVE_MP3
+    DinleMediaFile *mp3file = DINLE_MEDIA_FILE (dinle_media_file_mp3_new ());
+    const gchar *mp3ext = dinle_media_file_extensions (DINLE_MEDIA_FILE (mp3file));
+    gchar **mp3extensions = g_strsplit (mp3ext, " ", 0);
+    int i = 0;
+    while (mp3extensions[i]) {
+        g_hash_table_insert (media_formats,
+                             g_strdup(mp3extensions[i]), (gpointer)G_OBJECT_TYPE (mp3file));
+        g_print ("extension added: %s %s\n", mp3extensions[i], G_OBJECT_TYPE_NAME (mp3file));
+        i++;
+    }
+    g_strfreev (mp3extensions);
+    g_object_unref (G_OBJECT (mp3file));
+    mf_found = TRUE;
+#endif
+
+    if (!mf_found) {
+        g_error ("No media file plugin enabled... Quitting.\n");
+        abort();
+    }
+}
+
+gboolean
+dinle_is_file_supported (const gchar *file)
+{
+    if (!media_formats)
+        return FALSE;
+
+    const gchar *suffix = g_strrstr (file, ".");
+    suffix++;
+
+    return (g_hash_table_lookup (media_formats, suffix) != NULL);
 }
 
 const gchar *
@@ -138,6 +201,8 @@ dinle_media_file_set (DinleMediaFile *self, const gchar *file)
     g_return_val_if_fail (DINLE_IS_MEDIA_FILE (self), FALSE);
     DinleMediaFilePrivate *priv = MEDIA_FILE_PRIVATE (self);
 
+    _unset (self);
+
     if (!g_file_test (file, G_FILE_TEST_EXISTS))
         return FALSE;
 
@@ -145,20 +210,22 @@ dinle_media_file_set (DinleMediaFile *self, const gchar *file)
     return TRUE;
 }
 
-gboolean
-dinle_media_file_set_with_hash_size (DinleMediaFile *self, const gchar *file, const gchar *hash, guint size)
-{
-    g_return_val_if_fail (DINLE_IS_MEDIA_FILE (self), FALSE);
-    DinleMediaFilePrivate *priv = MEDIA_FILE_PRIVATE (self);
+/*gboolean*/
+/*dinle_media_file_set_with_hash_size (DinleMediaFile *self, const gchar *file, const gchar *hash, guint size)*/
+/*{*/
+    /*g_return_val_if_fail (DINLE_IS_MEDIA_FILE (self), FALSE);*/
+    /*DinleMediaFilePrivate *priv = MEDIA_FILE_PRIVATE (self);*/
 
-    if (!dinle_media_file_set (self, file))
-        return FALSE;
+    /*if (!dinle_media_file_set (self, file))*/
+        /*return FALSE;*/
 
-    g_free (priv->hash);
-    priv->hash = g_strdup (hash);
+    /*g_free (priv->hash);*/
+    /*priv->hash = g_strdup (hash);*/
 
-    priv->size = size;
-}
+    /*priv->size = size;*/
+
+    /*return TRUE;*/
+/*}*/
 
 const gchar *
 dinle_media_file_get_path (DinleMediaFile *self)
@@ -169,8 +236,8 @@ dinle_media_file_get_path (DinleMediaFile *self)
     return priv->file;
 }
 
-void
-dinle_media_file_unset (DinleMediaFile *self)
+static void
+_unset (DinleMediaFile *self)
 {
     g_return_if_fail (DINLE_IS_MEDIA_FILE (self));
     DinleMediaFilePrivate *priv = MEDIA_FILE_PRIVATE (self);

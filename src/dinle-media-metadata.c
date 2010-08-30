@@ -258,7 +258,7 @@ dinle_media_metadata_get_field_value_list (DinleMediaMetadata *md)
     g_return_val_if_fail (DINLE_IS_MEDIA_METADATA (md), NULL);
     DinleMediaMetadataPrivate *priv = MEDIA_METADATA_PRIVATE (md);
 
-    gchar **list = g_malloc0 (sizeof (gchar*) * g_hash_table_size (priv->fields) * 2 + 1);
+    gchar **list = g_malloc0 (sizeof (gchar*) * (g_hash_table_size (priv->fields) * 2 + 1));
 
     GHashTableIter iter;
     gpointer key, value;
