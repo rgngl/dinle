@@ -147,7 +147,7 @@ dinle_media_metadata_class_init (DinleMediaMetadataClass *klass)
     object_class->dispose = dinle_media_metadata_dispose;
     object_class->finalize = dinle_media_metadata_finalize;
 
-    pspec = g_param_spec_string ("artist",
+    pspec = g_param_spec_string (DINLE_TAG_ARTIST,
             "Artist Name",
             "Artist Name",
             NULL /* default value */,
@@ -156,7 +156,7 @@ dinle_media_metadata_class_init (DinleMediaMetadataClass *klass)
             PROP_ARTIST,
             pspec);
 
-    pspec = g_param_spec_string ("album",
+    pspec = g_param_spec_string (DINLE_TAG_ALBUM,
             "Album Name",
             "Album Name",
             NULL /* default value */,
@@ -165,7 +165,7 @@ dinle_media_metadata_class_init (DinleMediaMetadataClass *klass)
             PROP_ALBUM,
             pspec);
 
-    pspec = g_param_spec_string ("title",
+    pspec = g_param_spec_string (DINLE_TAG_TITLE,
             "Title Name",
             "Title Name",
             NULL /* default value */,
@@ -174,7 +174,7 @@ dinle_media_metadata_class_init (DinleMediaMetadataClass *klass)
             PROP_TITLE,
             pspec);
 
-    pspec = g_param_spec_string ("genre",
+    pspec = g_param_spec_string (DINLE_TAG_GENRE,
             "Genre Name",
             "Genre Name",
             NULL /* default value */,
@@ -183,7 +183,7 @@ dinle_media_metadata_class_init (DinleMediaMetadataClass *klass)
             PROP_GENRE,
             pspec);
 
-    pspec = g_param_spec_string ("length",
+    pspec = g_param_spec_string (DINLE_TAG_LENGTH,
             "Length",
             "Length in milliseconds",
             NULL,
@@ -192,7 +192,7 @@ dinle_media_metadata_class_init (DinleMediaMetadataClass *klass)
             PROP_LENGTH,
             pspec);
 
-    pspec = g_param_spec_string ("year",
+    pspec = g_param_spec_string (DINLE_TAG_YEAR,
             "Year",
             "Year",
             NULL,
@@ -201,7 +201,7 @@ dinle_media_metadata_class_init (DinleMediaMetadataClass *klass)
             PROP_YEAR,
             pspec);
 
-    pspec = g_param_spec_string ("track",
+    pspec = g_param_spec_string (DINLE_TAG_TRACK,
             "Track",
             "Track",
             NULL,
@@ -210,7 +210,7 @@ dinle_media_metadata_class_init (DinleMediaMetadataClass *klass)
             PROP_TRACK,
             pspec);
 
-    pspec = g_param_spec_string ("tracks",
+    pspec = g_param_spec_string (DINLE_TAG_TRACKS,
             "Tracks",
             "Number of Tracks",
             NULL,
@@ -219,7 +219,7 @@ dinle_media_metadata_class_init (DinleMediaMetadataClass *klass)
             PROP_TRACKS,
             pspec);
 
-    pspec = g_param_spec_string ("discno",
+    pspec = g_param_spec_string (DINLE_TAG_DISCNO,
             "Disc No",
             "Disc No",
             NULL,
@@ -228,7 +228,7 @@ dinle_media_metadata_class_init (DinleMediaMetadataClass *klass)
             PROP_DISCNO,
             pspec);
 
-    pspec = g_param_spec_string ("discs",
+    pspec = g_param_spec_string (DINLE_TAG_DISCS,
             "Discs",
             "Discs",
             NULL,

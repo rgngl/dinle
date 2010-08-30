@@ -20,6 +20,10 @@
 #include "dinle-media-file.h"
 #include "config.h"
 
+#ifdef HAVE_MP3
+#include "dinle-media-file-mp3.h"
+#endif
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -250,6 +254,10 @@ _unset (DinleMediaFile *self)
         g_free (priv->hash);
         priv->hash = NULL;
     }
+    if (priv->md) {
+        g_object_unref (priv->md);
+        priv->md = NULL;
+    }
 
     priv->size = 0;
 }
@@ -264,7 +272,8 @@ dinle_media_file_get_metadata (DinleMediaFile *self)
         return priv->md;
 
     if (DINLE_MEDIA_FILE_GET_CLASS (self)->get_metadata_file) {
-        return (DINLE_MEDIA_FILE_GET_CLASS (self)->get_metadata_file)(self, priv->file);
+        priv->md = DINLE_MEDIA_FILE_GET_CLASS (self)->get_metadata_file(self, priv->file);
+        return priv->md;
     }
 
     g_critical ("Pure virtual class get_metadata method called.\n");

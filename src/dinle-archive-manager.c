@@ -25,10 +25,6 @@
 #include "dinle-db-sqlite.h"
 #include "dinle-tags.h"
 
-#ifdef HAVE_MP3
-#include "dinle-media-file-mp3.h"
-#endif
-
 #include <stdlib.h>
 
 G_DEFINE_TYPE (DinleArchiveManager, dinle_archive_manager, G_TYPE_OBJECT)
