@@ -91,8 +91,8 @@ AC_SYS_LARGEFILE
 
 dnl Mandatory Libraries
 dnl ---------------------------------------------------------------------------
-PKG_CHECK_MODULES([GLIB], [glib-2.0 >= 2.20 gthread-2.0 gobject-2.0],,
-		[AC_MSG_ERROR([GLib 2.12 is required])])
+PKG_CHECK_MODULES([GLIB], [glib-2.0 >= 2.20 gthread-2.0 gobject-2.0 gio-2.0],,
+		[AC_MSG_ERROR([GLib 2.20 is required])])
 PKG_CHECK_MODULES([SQLITE], [sqlite3],,
                 [AC_MSG_ERROR([Sqlite is required])])
 

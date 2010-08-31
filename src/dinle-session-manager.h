@@ -47,7 +47,7 @@ struct _DinleSessionManagerClass
 
 GType dinle_session_manager_get_type (void) G_GNUC_CONST;
 
-DinleSessionManager *dinle_session_manager_new (void);
+DinleSessionManager *dinle_session_manager_get (void);
 
 G_END_DECLS
 

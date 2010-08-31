@@ -29,6 +29,7 @@ G_DEFINE_TYPE (DinleConfigManager, dinle_config_manager, G_TYPE_OBJECT)
 #define BASIC_SETTINGS_GROUP "basic"
 #define MEDIA_ROOT_KEY "mediaroot"
 #define MEDIA_DB_KEY "mediadb"
+#define SERVER_PORT_KEY "serverport"
 
 static DinleConfigManager *instance = NULL;
 
@@ -36,6 +37,7 @@ struct _DinleConfigManagerPrivate
 {
     gchar *media_root;
     gchar *media_db;
+    guint16 port;
 };
 
 enum {
@@ -43,6 +45,7 @@ enum {
 
     PROP_MEDIA_ROOT,
     PROP_MEDIA_DB,
+    PROP_SERVER_PORT,
 
     PROP_NUMBER
 };
@@ -103,6 +106,9 @@ dinle_config_manager_get_property (GObject    *object,
             break;
         case PROP_MEDIA_DB:
             g_value_set_string (value, priv->media_db);
+            break;
+        case PROP_SERVER_PORT:
+            g_value_set_uint (value, priv->port);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -165,6 +171,16 @@ dinle_config_manager_class_init (DinleConfigManagerClass *klass)
             PROP_MEDIA_DB,
             pspec);
 
+    pspec = g_param_spec_uint ("server-port",
+            "Server Port",
+            "Server Port",
+            0,
+            0xFFFF,
+            6666,
+            G_PARAM_READABLE);
+    g_object_class_install_property (object_class,
+            PROP_SERVER_PORT,
+            pspec);
 }
 
 static void
@@ -174,6 +190,7 @@ dinle_config_manager_init (DinleConfigManager *self)
     
     self->priv->media_root = NULL;
     self->priv->media_db = NULL;
+    self->priv->port = 0;
 }
 
 static DinleConfigManager *
@@ -198,6 +215,8 @@ update_config(GKeyFile *kf)
         priv->media_db = mdb;
         g_print ("Media db is: %s\n", priv->media_db);
     }
-    g_assert (mr);
-    g_assert (mdb);
+
+    guint port = g_key_file_get_integer (kf, BASIC_SETTINGS_GROUP, SERVER_PORT_KEY, NULL);
+    priv->port = port;
+    g_print ("Server port is: %d\n", priv->port);
 }

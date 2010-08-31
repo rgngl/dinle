@@ -17,6 +17,8 @@
 */
 #include "config.h"
 #include "dinle-config-manager.h"
+#include "dinle-archive-manager.h"
+#include "dinle-session-manager.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -115,7 +117,10 @@ int main(int argc, char** argv)
     if (music_root)
         fprintf(stderr, "%s\n", music_root);
 
-    /*g_main_loop_run(main_loop);*/
+    g_object_ref (dinle_session_manager_get ());
+
+    g_main_loop_run(main_loop);
+
     g_object_unref (dinle_archive_manager_get ());
     g_object_unref (dinle_archive_manager_get ());
 
