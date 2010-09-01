@@ -1,3 +1,20 @@
+/*
+    This file is part of Dinle.
+    Copyright 2010  Üstün Ergenoglu
+
+    Dinle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Dinle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Dinle.  If not, see <http://www.gnu.org/licenses/>.
+*/
 /* dinle-session-manager.c */
 
 #include <glib.h>
@@ -6,6 +23,7 @@
 
 #include "dinle-session-manager.h"
 #include "dinle-config-manager.h"
+#include "dinle-session.h"
 
 G_DEFINE_TYPE (DinleSessionManager, dinle_session_manager, G_TYPE_OBJECT)
 
@@ -17,6 +35,7 @@ struct _DinleSessionManagerPrivate
     GSocketService *service;
     GInetAddress *address;
     GSocketAddress *socket_address;
+    GHashTable *sessions;
 };
 
 static DinleSessionManager *instance = NULL;
@@ -24,7 +43,6 @@ static DinleSessionManager *instance = NULL;
 
 static gboolean _connection_received(GThreadedSocketService *service, GSocketConnection *connection,
                                      GObject *source_object, gpointer user_data);
-static gboolean _network_read(GIOChannel *source, GIOCondition cond, gpointer data);
 static DinleSessionManager* dinle_session_manager_new (void);
 
 DinleSessionManager *
@@ -92,12 +110,16 @@ dinle_session_manager_init (DinleSessionManager *self)
 {
     self->priv = SESSION_MANAGER_PRIVATE (self);
     gint dinle_server_port;
+    gint max_sessions;
     g_object_get (dinle_config_manager_get (),
                   "server-port", &dinle_server_port,
+                  "max-sessions", &max_sessions,
                   NULL);
 
+    self->priv->sessions = g_hash_table_new (g_direct_hash, g_direct_equal);
+
     GError *err = NULL;
-    self->priv->service = g_threaded_socket_service_new (16);
+    self->priv->service = g_threaded_socket_service_new (max_sessions);
     self->priv->address = g_inet_address_new_any (G_SOCKET_FAMILY_IPV6);
     self->priv->socket_address = g_inet_socket_address_new (self->priv->address, (guint16)dinle_server_port);
     gboolean success = g_socket_listener_add_address(G_SOCKET_LISTENER(self->priv->service),
@@ -108,11 +130,11 @@ dinle_session_manager_init (DinleSessionManager *self)
         g_print ("cannot bind on port, aborting.\n");
         abort ();
     }
-    g_object_unref(self->priv->socket_address);
-    g_object_unref(self->priv->address);
-    g_socket_service_start(self->priv->service);
+    g_object_unref (self->priv->socket_address);
+    g_object_unref (self->priv->address);
+    g_socket_service_start (self->priv->service);
 
-    g_signal_connect(self->priv->service, "run", G_CALLBACK(_connection_received), self);
+    g_signal_connect (self->priv->service, "run", G_CALLBACK(_connection_received), self);
 }
 
 static DinleSessionManager *
@@ -127,51 +149,11 @@ _connection_received (GThreadedSocketService *service,
                       GObject *source_object,
                       gpointer user_data)
 {
-    GSocketAddress *sockaddr = g_socket_connection_get_remote_address(connection, NULL);
-    GInetAddress *addr = g_inet_socket_address_get_address(G_INET_SOCKET_ADDRESS(sockaddr));
-    guint16 port = g_inet_socket_address_get_port(G_INET_SOCKET_ADDRESS(sockaddr));
+    DinleSessionManager *self = DINLE_SESSION_MANAGER (user_data);
+    g_return_val_if_fail (DINLE_IS_SESSION_MANAGER (self), FALSE);
+    DinleSessionManagerPrivate *priv = SESSION_MANAGER_PRIVATE (self);
 
-    g_print ("New Connection from %s:%d\n", g_inet_address_to_string(addr), port);
-
-    g_object_ref (connection);
-    GSocket *socket = g_socket_connection_get_socket(connection);
-
-    gint fd = g_socket_get_fd (socket);
-    GIOChannel *channel = g_io_channel_unix_new(fd);
-    g_io_add_watch(channel, G_IO_IN, (GIOFunc) _network_read, connection);
-    /*GInputStream *input = g_unix_input_stream_new (fd, TRUE);*/
-    /*GDataInputStream *data_input = g_data_input_stream_new (input);*/
-    /*GOutputStream *output = g_unix_output_stream_new (fd, TRUE);*/
-
-    return TRUE;
-}
-
-static gboolean
-_network_read (GIOChannel *source,
-               GIOCondition cond,
-               gpointer data)
-{
-    gchar *str = NULL;
-    gsize len = 0;
-    GError *error = NULL;
-    GIOStatus ret = g_io_channel_read_line(source, &str, &len, NULL, &error);
-
-    if (ret == G_IO_STATUS_ERROR) {
-        g_warning ("Error reading: %s\n", error->message);
-        // Drop last reference on connection
-        g_object_unref (data);
-        // Remove the event source
-    } else
-        g_print("Got: %s\n", str);
-
-    g_free (str);
-
-    if (ret == G_IO_STATUS_EOF || ret == G_IO_STATUS_ERROR) {
-        return FALSE;
-    }
-
-    g_io_channel_write_chars (source, "oi oi oi\n", -1, &len, &error);
-    g_io_channel_flush(source, &error);
+    g_hash_table_insert (priv->sessions, dinle_session_new (connection), connection);
 
     return TRUE;
 }

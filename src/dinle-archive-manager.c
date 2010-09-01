@@ -313,15 +313,6 @@ dinle_archive_manager_get (void)
             g_print ("updating db, it has %d files.\n", dinle_db_file_count (priv->db));
             _update_database ();
         }
-        DinleMediaFile **list = dinle_db_search_by_tags (priv->db,
-                                                         DINLE_TAG_ARTIST, "Kurban",
-                                                         DINLE_TAG_ALBUM, "Sahip",
-                                                         NULL);
-        int i = 0;
-        while (list && list[i]) {
-            g_print ("%s \n", dinle_media_file_get_path (list[i]));
-            i++;
-        }
     }
 
     return instance;

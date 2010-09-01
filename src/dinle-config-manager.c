@@ -30,6 +30,7 @@ G_DEFINE_TYPE (DinleConfigManager, dinle_config_manager, G_TYPE_OBJECT)
 #define MEDIA_ROOT_KEY "mediaroot"
 #define MEDIA_DB_KEY "mediadb"
 #define SERVER_PORT_KEY "serverport"
+#define MAX_SESSIONS_KEY "maxsessions"
 
 static DinleConfigManager *instance = NULL;
 
@@ -38,6 +39,7 @@ struct _DinleConfigManagerPrivate
     gchar *media_root;
     gchar *media_db;
     guint16 port;
+    guint max_sessions;
 };
 
 enum {
@@ -46,6 +48,7 @@ enum {
     PROP_MEDIA_ROOT,
     PROP_MEDIA_DB,
     PROP_SERVER_PORT,
+    PROP_MAX_SESSIONS,
 
     PROP_NUMBER
 };
@@ -109,6 +112,9 @@ dinle_config_manager_get_property (GObject    *object,
             break;
         case PROP_SERVER_PORT:
             g_value_set_uint (value, priv->port);
+            break;
+        case PROP_MAX_SESSIONS:
+            g_value_set_uint (value, priv->max_sessions);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -181,6 +187,17 @@ dinle_config_manager_class_init (DinleConfigManagerClass *klass)
     g_object_class_install_property (object_class,
             PROP_SERVER_PORT,
             pspec);
+
+    pspec = g_param_spec_uint ("max-sessions",
+            "Maximum number of sessions.",
+            "Maximum number of sessions.",
+            0,
+            32,
+            16,
+            G_PARAM_READABLE);
+    g_object_class_install_property (object_class,
+            PROP_MAX_SESSIONS,
+            pspec);
 }
 
 static void
@@ -191,6 +208,7 @@ dinle_config_manager_init (DinleConfigManager *self)
     self->priv->media_root = NULL;
     self->priv->media_db = NULL;
     self->priv->port = 0;
+    self->priv->max_sessions = 16;
 }
 
 static DinleConfigManager *
@@ -217,6 +235,12 @@ update_config(GKeyFile *kf)
     }
 
     guint port = g_key_file_get_integer (kf, BASIC_SETTINGS_GROUP, SERVER_PORT_KEY, NULL);
-    priv->port = port;
+    if (port)
+        priv->port = port;
     g_print ("Server port is: %d\n", priv->port);
+
+    guint max_sessions = g_key_file_get_integer (kf, BASIC_SETTINGS_GROUP, MAX_SESSIONS_KEY, NULL);
+    if (max_sessions)
+        priv->max_sessions = max_sessions;
+    g_print ("Max sessions: %d\n", priv->max_sessions);
 }

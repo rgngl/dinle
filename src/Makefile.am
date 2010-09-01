@@ -15,7 +15,8 @@ dinled_SOURCES = main.c \
 		 dinle-media-metadata.c \
 		 dinle-db.c \
 		 dinle-db-sqlite.c \
-		 dinle-session-manager.c
+		 dinle-session-manager.c \
+		 dinle-session.c
 
 dinled_headers = dinle-tags.h \
 		 dinle-archive-manager.h \
@@ -24,7 +25,8 @@ dinled_headers = dinle-tags.h \
 		 dinle-media-metadata.h \
 		 dinle-db.h \
 		 dinle-db-sqlite.h \
-		 dinle-session-manager.h
+		 dinle-session-manager.h \
+		 dinle-session.h
 
 if HAVE_MP3
 dinled_SOURCES += dinle-media-file-mp3.c
