@@ -344,7 +344,7 @@ _get_files (DinleDb *db)
     if (rows >= 1) {
         list = g_malloc0 (sizeof(gchar*) * rows + 1);
         int i = 1;
-        while (table[i]) {
+        while (i <= rows) {
             list [i-1] = g_strdup (table[i]);
             i++;
         }

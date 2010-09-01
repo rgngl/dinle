@@ -131,6 +131,9 @@ dinle_media_file_new (const gchar *file)
     const gchar *suffix = g_strrstr (file, ".");
     suffix++;
 
+    if (!suffix)
+        return NULL;
+
     gpointer t = g_hash_table_lookup (media_formats, suffix);
     if (!t)
         return NULL;
@@ -180,6 +183,10 @@ dinle_is_file_supported (const gchar *file)
         return FALSE;
 
     const gchar *suffix = g_strrstr (file, ".");
+
+    if (!suffix)
+        return FALSE;
+
     suffix++;
 
     return (g_hash_table_lookup (media_formats, suffix) != NULL);
