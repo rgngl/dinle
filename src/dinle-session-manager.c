@@ -44,6 +44,7 @@ static DinleSessionManager *instance = NULL;
 static gboolean _connection_received(GThreadedSocketService *service, GSocketConnection *connection,
                                      GObject *source_object, gpointer user_data);
 static DinleSessionManager* dinle_session_manager_new (void);
+static void _session_done (DinleSession *session, gpointer user_data);
 
 DinleSessionManager *
 dinle_session_manager_get (void)
@@ -121,7 +122,8 @@ dinle_session_manager_init (DinleSessionManager *self)
     GError *err = NULL;
     self->priv->service = g_threaded_socket_service_new (max_sessions);
     self->priv->address = g_inet_address_new_any (G_SOCKET_FAMILY_IPV6);
-    self->priv->socket_address = g_inet_socket_address_new (self->priv->address, (guint16)dinle_server_port);
+    self->priv->socket_address = g_inet_socket_address_new (self->priv->address,
+                                                            (guint16)dinle_server_port);
     gboolean success = g_socket_listener_add_address(G_SOCKET_LISTENER(self->priv->service),
                                                      self->priv->socket_address, G_SOCKET_TYPE_STREAM,
                                                      G_SOCKET_PROTOCOL_TCP, NULL, NULL, NULL);
@@ -153,7 +155,23 @@ _connection_received (GThreadedSocketService *service,
     g_return_val_if_fail (DINLE_IS_SESSION_MANAGER (self), FALSE);
     DinleSessionManagerPrivate *priv = SESSION_MANAGER_PRIVATE (self);
 
-    g_hash_table_insert (priv->sessions, dinle_session_new (connection), connection);
+    DinleSession *ns = dinle_session_new (connection);
+    g_signal_connect (ns, "done", G_CALLBACK (_session_done), self);
+    g_hash_table_insert (priv->sessions, ns, connection);
 
     return TRUE;
+}
+
+static void _session_done
+(DinleSession *session, gpointer user_data)
+{
+    DinleSessionManager *self = DINLE_SESSION_MANAGER (user_data);
+    g_return_if_fail (DINLE_IS_SESSION_MANAGER (self));
+    DinleSessionManagerPrivate *priv = SESSION_MANAGER_PRIVATE (self);
+
+    g_return_if_fail (DINLE_IS_SESSION (session));
+
+    g_object_unref (session);
+    g_hash_table_remove (priv->sessions, (gconstpointer) session);
+    g_print ("session destroyed.\n");
 }
