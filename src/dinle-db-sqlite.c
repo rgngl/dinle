@@ -236,7 +236,6 @@ _add_file (DinleDb *db, DinleMediaFile *file)
         g_warning ("sqlite error happened: %s\n", errormsg);
     }
 
-    g_object_unref (md);
     g_strfreev (field_list);
     return (result == SQLITE_OK);
 }

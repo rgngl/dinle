@@ -18,6 +18,7 @@
 /* dinle-session.c */
 
 #include "dinle-session.h"
+#include "dinle-commands.h"
 #include "config.h"
 
 G_DEFINE_TYPE (DinleSession, dinle_session, G_TYPE_OBJECT)
@@ -39,6 +40,7 @@ typedef enum _DinleSessionState DinleSessionState;
 struct _DinleSessionPrivate
 {
     GSocketConnection *conn;
+    GMarkupParseContext *parse_context;
     guint state;
     GString *str;
 };
@@ -52,6 +54,22 @@ static guint signals[NUM_SIGNALS] = {0};
 
 static void _init (DinleSession *self, GSocketConnection *conn);
 static gboolean _network_read(GIOChannel *source, GIOCondition cond, gpointer data);
+
+void _start_element (GMarkupParseContext *context, const gchar *element_name,
+                     const gchar **attribute_names,const gchar **attribute_values,
+                     gpointer user_data, GError **error);
+void _text (GMarkupParseContext *context, const gchar *text, gsize text_len,
+            gpointer user_data, GError **error);
+void _end_element (GMarkupParseContext *context, const gchar *element_name,
+                   gpointer user_data, GError **error);
+
+static GMarkupParser parser = {
+    _start_element,
+    _end_element,
+    _text,
+    NULL,
+    NULL
+};
 
 static void
 dinle_session_get_property (GObject    *object,
@@ -95,6 +113,9 @@ dinle_session_finalize (GObject *object)
 
     g_string_free (priv->str, TRUE);
 
+    if (priv->parse_context)
+        g_markup_parse_context_free (priv->parse_context);
+
     G_OBJECT_CLASS (dinle_session_parent_class)->finalize (object);
 }
 
@@ -125,6 +146,11 @@ static void
 dinle_session_init (DinleSession *self)
 {
     self->priv = SESSION_PRIVATE (self);
+
+    self->priv->state = DINLE_SESSION_STATE_NEW;
+    self->priv->str = g_string_new ("");
+    self->priv->conn = NULL;
+    self->priv->parse_context = g_markup_parse_context_new (&parser, 0, self, NULL);
 }
 
 static void
@@ -134,10 +160,6 @@ _init (DinleSession *self, GSocketConnection *conn)
     DinleSessionPrivate *priv = SESSION_PRIVATE (self);
 
     GError *error = NULL;
-
-    priv->state = DINLE_SESSION_STATE_NEW;
-
-    priv->str = g_string_new ("");
 
     priv->conn = conn;
     GSocketAddress *sockaddr = g_socket_connection_get_remote_address (conn, NULL);
@@ -167,6 +189,7 @@ _network_read (GIOChannel *source,
     DinleSession *self = DINLE_SESSION (data);
     g_return_val_if_fail (DINLE_IS_SESSION (self), FALSE);
     DinleSessionPrivate *priv = SESSION_PRIVATE (self);
+
     gchar buf[BUF_LEN+1];
     gsize len = 0;
     GError *error = NULL;
@@ -190,12 +213,52 @@ _network_read (GIOChannel *source,
         return FALSE;
     }
 
-    g_print("Got: %d\n",  (guint)len);
+    g_print("Got: %d\n", (guint)len);
+    g_string_append (priv->str, buf);
+    if (g_strstr_len (priv->str->str, priv->str->len , DINLE_COMMAND_END)) {
+        g_print ("end command came, parsing now.\n");
+        if (g_markup_parse_context_parse (priv->parse_context, priv->str->str,
+                                          priv->str->len, NULL) == FALSE) {
+            g_warning ("failed parsing commands.\n");
+        }
+        g_string_assign (priv->str, "");
+    }
 
     g_io_channel_write_chars (source, "oi oi oi\n", -1, &len, &error);
     g_io_channel_flush (source, &error);
 
     return TRUE;
+}
+
+void _start_element (GMarkupParseContext *context, const gchar *element_name,
+                     const gchar **attribute_names,const gchar **attribute_values,
+                     gpointer user_data, GError **error)
+{
+    g_print ("start: %s\n", element_name);
+    const gchar **name = attribute_names;
+    const gchar **value = attribute_values;
+
+    while (*name) {
+        g_print ("%s = %s\n",*name, *value);
+        name ++;
+        value ++;
+    }
+}
+
+void _text (GMarkupParseContext *context, const gchar *text, gsize text_len,
+            gpointer user_data, GError **error)
+{
+    g_print ("text: %*s\n", (gint)text_len, text);
+}
+
+void _end_element (GMarkupParseContext *context, const gchar *element_name,
+                   gpointer user_data, GError **error)
+{
+    DinleSession *self = DINLE_SESSION (user_data);
+    g_return_if_fail (DINLE_IS_SESSION (self));
+    DinleSessionPrivate *priv = SESSION_PRIVATE (self);
+
+    g_print ("end: %s\n", element_name);
 }
 
 DinleSession *

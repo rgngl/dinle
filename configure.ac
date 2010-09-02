@@ -120,7 +120,7 @@ AM_CONDITIONAL(HAVE_MP3, test x$enable_mp3 = xyes)
 dnl ----------------------------------- GCC -----------------------------------
 if test x$GCC = xyes
 then
-	DINLE_CHECK_FLAG([-Wall])
+	#DINLE_CHECK_FLAG([-Wall])
 	DINLE_CHECK_FLAG([-Wextra])
 	DINLE_CHECK_FLAG([-Wno-deprecated-declarations])
 	DINLE_CHECK_FLAG([-Wmissing-prototypes])

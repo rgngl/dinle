@@ -1,8 +1,8 @@
 bin_PROGRAMS = dinled
 
 dinled_CFLAGS = $(AM_CFLAGS) $(DINLE_CFLAGS) \
-                    $(SQLITE_CFLAGS) \
-		    $(GLIB_CFLAGS)
+                $(SQLITE_CFLAGS) \
+		$(GLIB_CFLAGS)
 
 dinled_LDADD = $(DINLE_LIBS) \
                $(GLIB_LIBS) \
@@ -18,7 +18,7 @@ dinled_SOURCES = main.c \
 		 dinle-session-manager.c \
 		 dinle-session.c
 
-dinled_headers = dinle-tags.h \
+dinled_headers = $(exported_headers) \
 		 dinle-archive-manager.h \
 		 dinle-config-manager.h \
 		 dinle-media-file.h \

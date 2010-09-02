@@ -198,6 +198,8 @@ _update_database (void)
     g_print ("checking changes in known files.\n");
     _traverse_directory (media_root, _get_from_db_cb, NULL);
 
+    g_print ("finished updating db.\n");
+
     g_value_unset (&media_root_prop);
 }
 
