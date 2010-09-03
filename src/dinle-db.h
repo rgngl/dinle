@@ -78,6 +78,7 @@ struct _DinleDbClass
 GType dinle_db_get_type (void) G_GNUC_CONST;
 
 gboolean dinle_db_set_db (DinleDb *db, const gchar *name);
+
 gboolean dinle_db_add_file (DinleDb *db, DinleMediaFile *file);
 DinleMediaFile* dinle_db_get_file_by_name (DinleDb *db, const gchar *name);
 DinleMediaFile** dinle_db_search_by_tags_valist (DinleDb *db, const gchar *first_tag, va_list vars);
@@ -87,9 +88,10 @@ DinleMediaFile** dinle_db_search_by_tags (DinleDb *db,
 gchar** dinle_db_get_files (DinleDb *db);
 gboolean dinle_db_file_exists (DinleDb *db, const gchar *file);
 gboolean dinle_db_remove_file (DinleDb *db, const gchar *file);
+gint dinle_db_file_count (DinleDb *db);
+
 gboolean dinle_db_unset (DinleDb *db);
 gboolean dinle_db_drop (DinleDb *db);
-gint dinle_db_file_count (DinleDb *db);
 
 G_END_DECLS
 

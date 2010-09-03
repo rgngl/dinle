@@ -7,7 +7,7 @@ exported_headers = include/dinle-tags.h \
 		   include/dinle-commands.h
 
 SUBDIRS = src
-DIST_SUBDIRS = $(SUBDIRS) include
+DIST_SUBDIRS = $(SUBDIRS)
 
 #
 # Distribution

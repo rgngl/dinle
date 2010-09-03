@@ -207,8 +207,7 @@ _network_read (GIOChannel *source,
         return FALSE;
     }
 
-    g_print ("%s\n", DINLE_COMMAND_END);
-    g_print ("Got: %d \n\"%s\"\n", (guint)len, buf);
+    /*g_print ("Got: %d \n\"%s\"\n", (guint)len, buf);*/
     if (g_markup_parse_context_parse (priv->parse_context,
                 buf, len, NULL) == FALSE) {
         g_warning ("failed parsing commands.\n");
@@ -219,23 +218,23 @@ _network_read (GIOChannel *source,
         g_io_channel_flush (source, &error);
         dinle_session_close (self);
     }
-    if (g_strstr_len (buf, len+1 , DINLE_COMMAND_END)) {
-        if (error) {
-            g_error_free (error);
-            error = NULL;
-        }
-        g_print ("end command detected\n");
-        if (!g_markup_parse_context_end_parse (priv->parse_context, &error)) {
-            g_warning ("failed parsing commands.\n");
-            g_markup_parse_context_free (priv->parse_context);
-            priv->parse_context = g_markup_parse_context_new (&parser, 0, self, NULL);
-            g_io_channel_write_chars (source, "<error>Failed parsing command.</error>",
-                                      -1, &len, &error);
-            g_io_channel_flush (source, &error);
-            dinle_session_close (self);
-        }
-    } else {
-    }
+    /*if (g_strstr_len (buf, len+1 , DINLE_COMMAND_END)) {*/
+        /*if (error) {*/
+            /*g_error_free (error);*/
+            /*error = NULL;*/
+        /*}*/
+        /*g_print ("end command detected\n");*/
+        /*if (!g_markup_parse_context_end_parse (priv->parse_context, &error)) {*/
+            /*g_warning ("failed parsing commands.\n");*/
+            /*g_markup_parse_context_free (priv->parse_context);*/
+            /*priv->parse_context = g_markup_parse_context_new (&parser, 0, self, NULL);*/
+            /*g_io_channel_write_chars (source, "<error>Failed parsing command.</error>",*/
+                                      /*-1, &len, &error);*/
+            /*g_io_channel_flush (source, &error);*/
+            /*dinle_session_close (self);*/
+        /*}*/
+    /*} else {*/
+    /*}*/
 
     if (error) {
         g_error_free (error);
