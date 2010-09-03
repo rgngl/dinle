@@ -197,35 +197,50 @@ _network_read (GIOChannel *source,
     buf[len] = '\0';
 
     if (ret == G_IO_STATUS_EOF) {
-        g_object_unref (priv->conn);
-        priv->conn = NULL;
-        g_print ("EOF\n");
-        g_signal_emit_by_name (self, "done");
+        dinle_session_close (self);
         return FALSE;
     }
 
     if (ret == G_IO_STATUS_ERROR) {
         g_warning ("Error reading: %s\n", error->message);
-        // Drop last reference on connection
-        g_object_unref (priv->conn);
-        priv->conn = NULL;
-        g_signal_emit_by_name (self, "done");
+        dinle_session_close (self);
         return FALSE;
     }
 
-    g_print("Got: %d\n", (guint)len);
-    g_string_append (priv->str, buf);
-    if (g_strstr_len (priv->str->str, priv->str->len , DINLE_COMMAND_END)) {
-        g_print ("end command came, parsing now.\n");
-        if (g_markup_parse_context_parse (priv->parse_context, priv->str->str,
-                                          priv->str->len, NULL) == FALSE) {
-            g_warning ("failed parsing commands.\n");
+    g_print ("%s\n", DINLE_COMMAND_END);
+    g_print ("Got: %d \n\"%s\"\n", (guint)len, buf);
+    if (g_markup_parse_context_parse (priv->parse_context,
+                buf, len, NULL) == FALSE) {
+        g_warning ("failed parsing commands.\n");
+        g_markup_parse_context_free (priv->parse_context);
+        priv->parse_context = g_markup_parse_context_new (&parser, 0, self, NULL);
+        g_io_channel_write_chars (source, "<error>Failed parsing command.</error>",
+                -1, &len, &error);
+        g_io_channel_flush (source, &error);
+        dinle_session_close (self);
+    }
+    if (g_strstr_len (buf, len+1 , DINLE_COMMAND_END)) {
+        if (error) {
+            g_error_free (error);
+            error = NULL;
         }
-        g_string_assign (priv->str, "");
+        g_print ("end command detected\n");
+        if (!g_markup_parse_context_end_parse (priv->parse_context, &error)) {
+            g_warning ("failed parsing commands.\n");
+            g_markup_parse_context_free (priv->parse_context);
+            priv->parse_context = g_markup_parse_context_new (&parser, 0, self, NULL);
+            g_io_channel_write_chars (source, "<error>Failed parsing command.</error>",
+                                      -1, &len, &error);
+            g_io_channel_flush (source, &error);
+            dinle_session_close (self);
+        }
+    } else {
     }
 
-    g_io_channel_write_chars (source, "oi oi oi\n", -1, &len, &error);
-    g_io_channel_flush (source, &error);
+    if (error) {
+        g_error_free (error);
+        error = NULL;
+    }
 
     return TRUE;
 }
@@ -268,4 +283,20 @@ dinle_session_new (GSocketConnection *conn)
     _init (DINLE_SESSION (obj), conn);
 
     return DINLE_SESSION (obj);
+}
+
+gboolean
+dinle_session_close (DinleSession *self)
+{
+    g_return_val_if_fail (DINLE_IS_SESSION (self), FALSE);
+    DinleSessionPrivate *priv = SESSION_PRIVATE (self);
+
+    if (priv->conn) {
+        g_object_unref (priv->conn);
+        priv->conn = NULL;
+        g_print ("EOF\n");
+        g_signal_emit_by_name (self, "done");
+    }
+
+    return TRUE;
 }

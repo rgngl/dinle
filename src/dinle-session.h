@@ -69,6 +69,7 @@ struct _DinleSessionClass
 GType dinle_session_get_type (void) G_GNUC_CONST;
 
 DinleSession *dinle_session_new (GSocketConnection *conn);
+gboolean dinle_session_close (DinleSession *self);
 
 G_END_DECLS
 
