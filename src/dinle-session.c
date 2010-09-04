@@ -98,14 +98,20 @@ dinle_session_finalize (GObject *object)
 {
     g_return_if_fail (DINLE_IS_SESSION (object));
     DinleSessionPrivate *priv = SESSION_PRIVATE (object);
-    if (priv->conn)
+    if (priv->conn) {
         g_object_unref (priv->conn);
+        priv->conn = NULL;
+    }
 
-    if (priv->channel)
+    if (priv->channel) {
         g_io_channel_unref (priv->channel);
+        priv->channel = NULL;
+    }
 
-    if (priv->handler)
+    if (priv->handler) {
         g_object_unref (priv->handler);
+        priv->handler = NULL;
+    }
 
     G_OBJECT_CLASS (dinle_session_parent_class)->finalize (object);
 }
@@ -209,6 +215,7 @@ _network_read (GIOChannel *source,
         g_io_channel_flush (source, &error);
         g_signal_emit_by_name (self, "done");
         /*dinle_session_close (self);*/
+        return FALSE;
     }
 
     if (error) {
