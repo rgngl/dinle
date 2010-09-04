@@ -52,19 +52,19 @@ typedef struct _DinleSessionHandlerAuthPrivate DinleSessionHandlerAuthPrivate;
 
 struct _DinleSessionHandlerAuth
 {
-  DinleSessionHandler parent;
+    DinleSessionHandler parent;
 
-  DinleSessionHandlerAuthPrivate *priv;
+    DinleSessionHandlerAuthPrivate *priv;
 };
 
 struct _DinleSessionHandlerAuthClass
 {
-  DinleSessionHandlerClass parent_class;
+    DinleSessionHandlerClass parent_class;
 };
 
 GType dinle_session_handler_auth_get_type (void) G_GNUC_CONST;
 
-DinleSessionHandlerAuth *dinle_session_handler_auth_new (void);
+DinleSessionHandler *dinle_session_handler_auth_new (void);
 
 G_END_DECLS
 

@@ -94,7 +94,7 @@ dinle_session_handler_class_init (DinleSessionHandlerClass *klass)
                 G_SIGNAL_RUN_FIRST,
                 G_STRUCT_OFFSET (DinleSessionHandlerClass, done),
                 NULL, NULL,
-                g_cclosure_marshal_VOID__VOID,
+                g_cclosure_marshal_VOID__BOOLEAN,
                 G_TYPE_NONE, 1, G_TYPE_BOOLEAN);
 }
 

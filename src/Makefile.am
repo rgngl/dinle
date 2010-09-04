@@ -18,7 +18,8 @@ dinled_SOURCES = main.c \
 		 dinle-session-manager.c \
 		 dinle-session.c \
 		 dinle-session-handler.c \
-		 dinle-session-handler-auth.c
+		 dinle-session-handler-auth.c \
+		 dinle-session-handler-new.c
 
 dinled_headers = $(exported_headers) \
 		 dinle-archive-manager.h \
@@ -30,7 +31,8 @@ dinled_headers = $(exported_headers) \
 		 dinle-session-manager.h \
 		 dinle-session.h \
 		 dinle-session-handler.h \
-		 dinle-session-handler-auth.h
+		 dinle-session-handler-auth.h \
+		 dinle-session-handler-new.h
 
 if HAVE_MP3
 dinled_SOURCES += dinle-media-file-mp3.c
