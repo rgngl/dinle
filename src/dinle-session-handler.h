@@ -65,11 +65,13 @@ struct _DinleSessionHandlerClass
 
     /* Signals */
     void (*done) (DinleSessionHandler *self, gboolean success, gpointer user_data);
+    void (*reply) (DinleSessionHandler *self, const gchar *reply, gpointer user_data);
 };
 
 GType dinle_session_handler_get_type (void) G_GNUC_CONST;
 
-gboolean dinle_session_handler_process (DinleSessionHandler *self, gchar *data, gsize len);
+gboolean dinle_session_handler_process (DinleSessionHandler *self,
+                                        gchar *data, gsize len);
 
 G_END_DECLS
 

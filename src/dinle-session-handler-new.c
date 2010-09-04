@@ -102,9 +102,11 @@ _process (DinleSessionHandler *handler, gchar *data, gsize len)
     g_return_val_if_fail (DINLE_IS_SESSION_HANDLER_NEW (handler), FALSE);
     DinleSessionHandlerNewPrivate *priv = SESSION_HANDLER_NEW_PRIVATE (handler);
 
-    if (!g_str_has_prefix (data, DINLE_CLIENT_TAG))
+    if (!g_str_has_prefix (data, DINLE_TAG_CLIENT))
         return FALSE;
 
+    g_signal_emit_by_name (handler, "reply",
+                           DINLE_TAG_ALONE (DINLE_REPLY_CLIENTOK, ""));
     g_signal_emit_by_name (handler, "done", TRUE);
 
     return TRUE;

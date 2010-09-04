@@ -26,6 +26,7 @@ G_DEFINE_TYPE (DinleSessionHandler, dinle_session_handler, G_TYPE_OBJECT)
 
 typedef enum {
     DONE_SIGNAL,
+    REPLY_SIGNAL,
 
     NUM_SIGNALS
 } DinleSessionSignals;
@@ -96,6 +97,15 @@ dinle_session_handler_class_init (DinleSessionHandlerClass *klass)
                 NULL, NULL,
                 g_cclosure_marshal_VOID__BOOLEAN,
                 G_TYPE_NONE, 1, G_TYPE_BOOLEAN);
+
+    signals[REPLY_SIGNAL] =
+        g_signal_new ("reply",
+                G_TYPE_FROM_CLASS (klass),
+                G_SIGNAL_RUN_FIRST,
+                G_STRUCT_OFFSET (DinleSessionHandlerClass, reply),
+                NULL, NULL,
+                g_cclosure_marshal_VOID__STRING,
+                G_TYPE_NONE, 1, G_TYPE_STRING);
 }
 
 static void
