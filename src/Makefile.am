@@ -1,6 +1,7 @@
 bin_PROGRAMS = dinled
 
-dinled_CFLAGS = $(AM_CFLAGS) $(DINLE_CFLAGS) \
+dinled_CFLAGS = -I$(top_srcdir)/include \
+		$(AM_CPPFLAGS) $(AM_CFLAGS) $(DINLE_CFLAGS) \
                 $(SQLITE_CFLAGS) \
 		$(GLIB_CFLAGS)
 
@@ -8,31 +9,32 @@ dinled_LDADD = $(DINLE_LIBS) \
                $(GLIB_LIBS) \
 	       $(SQLITE_LIBS)
 
-dinled_SOURCES = main.c \
-		 dinle-archive-manager.c \
-		 dinle-config-manager.c \
-		 dinle-media-file.c \
-		 dinle-media-metadata.c \
-		 dinle-db.c \
-		 dinle-db-sqlite.c \
-		 dinle-session-manager.c \
-		 dinle-session.c \
-		 dinle-session-handler.c \
-		 dinle-session-handler-auth.c \
-		 dinle-session-handler-new.c
-
-dinled_headers = $(exported_headers) \
-		 dinle-archive-manager.h \
-		 dinle-config-manager.h \
-		 dinle-media-file.h \
-		 dinle-media-metadata.h \
-		 dinle-db.h \
-		 dinle-db-sqlite.h \
-		 dinle-session-manager.h \
-		 dinle-session.h \
-		 dinle-session-handler.h \
-		 dinle-session-handler-auth.h \
+dinled_headers = $(exported_headers)\
+		 dinle-archive-manager.h\
+		 dinle-config-manager.h\
+		 dinle-media-file.h\
+		 dinle-media-metadata.h\
+		 dinle-db.h\
+		 dinle-db-sqlite.h\
+		 dinle-session-manager.h\
+		 dinle-session.h\
+		 dinle-session-handler.h\
+		 dinle-session-handler-auth.h\
 		 dinle-session-handler-new.h
+
+dinled_SOURCES = $(dinled_headers)\
+		 main.c\
+		 dinle-archive-manager.c\
+		 dinle-config-manager.c\
+		 dinle-media-file.c\
+		 dinle-media-metadata.c\
+		 dinle-db.c\
+		 dinle-db-sqlite.c\
+		 dinle-session-manager.c\
+		 dinle-session.c\
+		 dinle-session-handler.c\
+		 dinle-session-handler-auth.c\
+		 dinle-session-handler-new.c
 
 if HAVE_MP3
 dinled_SOURCES += dinle-media-file-mp3.c

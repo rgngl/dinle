@@ -2,7 +2,7 @@ AC_INIT([dinle], [0.01], [ustun.ergenoglu@gmail.com])
 AM_INIT_AUTOMAKE([foreign -Werror])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile src/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile include/Makefile])
 
 dnl Programs
 dnl ---------------------------------------------------------------------------
