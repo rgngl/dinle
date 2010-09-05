@@ -6,3 +6,5 @@ libdinleclient_la_CFLAGS = -I$(top_srcdir)/common \
 			   $(GLIB_CFLAGS)
 
 libdinleclient_la_SOURCES = dinle.c
+
+libdinleclient_la_LDFLAGS = -version-info 1:0:1
