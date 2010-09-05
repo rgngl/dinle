@@ -3,14 +3,14 @@ AUTOMAKE_OPTIONS = foreign dist-bzip2 subdir-objects
 
 AM_CPPFLAGS = -I$(srcdir)/src
 
-exported_headers = include/dinle-tags.h \
-		   include/dinle-commands.h
+common_headers = common/dinle-tags.h \
+		 common/dinle-commands.h
 
-SUBDIRS = src include
+SUBDIRS = src lib
 DIST_SUBDIRS = $(SUBDIRS)
 
 #
 # Distribution
 #
 
-EXTRA_DIST = autogen.sh
+EXTRA_DIST = autogen.sh $(common_headers)

@@ -2,7 +2,13 @@ AC_INIT([dinle], [0.01], [ustun.ergenoglu@gmail.com])
 AM_INIT_AUTOMAKE([foreign -Werror])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile src/Makefile include/Makefile])
+AC_CONFIG_FILES([Makefile\
+        src/Makefile\
+        lib/Makefile\
+        lib/src/Makefile\
+        lib/include/Makefile\
+        lib/include/dinle/Makefile\
+        lib/example/Makefile])
 
 dnl Programs
 dnl ---------------------------------------------------------------------------
@@ -11,6 +17,7 @@ AM_PROG_CC_C_O
 PKG_PROG_PKG_CONFIG
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
+AC_PROG_LIBTOOL
 
 dnl Declare Variables
 dnl ---------------------------------------------------------------------------

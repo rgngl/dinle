@@ -1,6 +1,6 @@
 bin_PROGRAMS = dinled
 
-dinled_CFLAGS = -I$(top_srcdir)/include \
+dinled_CFLAGS = -I$(top_srcdir)/common \
 		$(AM_CPPFLAGS) $(AM_CFLAGS) $(DINLE_CFLAGS) \
                 $(SQLITE_CFLAGS) \
 		$(GLIB_CFLAGS)
@@ -9,7 +9,7 @@ dinled_LDADD = $(DINLE_LIBS) \
                $(GLIB_LIBS) \
 	       $(SQLITE_LIBS)
 
-dinled_headers = $(exported_headers)\
+dinled_headers = $(common_headers)\
 		 dinle-archive-manager.h\
 		 dinle-config-manager.h\
 		 dinle-media-file.h\

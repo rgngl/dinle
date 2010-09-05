@@ -15,6 +15,10 @@
 
 
 #define DINLE_COMMAND_END "end-command"
+#define DINLE_COMMAND_LOGIN "login"
+
+#define DINLE_PARAM_USER "user"
+#define DINLE_PARAM_PASS "pass"
 
 #define DINLE_REPLY_CLIENTOK "client-ok"
 #define DINLE_REPLY_ERROR "error"
