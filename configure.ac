@@ -93,6 +93,13 @@ AC_ARG_ENABLE(sqlite,
 	AS_HELP_STRING([--enable-sqlite],
 		[enable support for the SQLite database]),,
 	[enable_sqlite=auto])
+AC_ARG_ENABLE(ipv6,
+        AS_HELP_STRING([--enable-ipv6],
+                [enable IPV6 support]),,
+        [enable_ipv6=no])
+if test x$enable_ipv6 = xyes; then
+    AC_DEFINE(HAVE_IPV6, 1, [Use IPv6])
+fi
 
 AC_SYS_LARGEFILE
 

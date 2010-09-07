@@ -21,6 +21,8 @@
 #include <gio/gio.h>
 #include <stdlib.h>
 
+#include "config.h"
+
 #include "dinle-session-manager.h"
 #include "dinle-config-manager.h"
 #include "dinle-session.h"
@@ -29,6 +31,12 @@ G_DEFINE_TYPE (DinleSessionManager, dinle_session_manager, G_TYPE_OBJECT)
 
 #define SESSION_MANAGER_PRIVATE(o) \
         (G_TYPE_INSTANCE_GET_PRIVATE ((o), DINLE_TYPE_SESSION_MANAGER, DinleSessionManagerPrivate))
+
+#if HAVE_IPV6
+    GSocketFamily dinle_socket_family = G_SOCKET_FAMILY_IPV6;
+#else
+    GSocketFamily dinle_socket_family = G_SOCKET_FAMILY_IPV4;
+#endif
 
 struct _DinleSessionManagerPrivate
 {
@@ -121,17 +129,19 @@ dinle_session_manager_init (DinleSessionManager *self)
 
     GError *err = NULL;
     self->priv->service = g_threaded_socket_service_new (max_sessions);
-    self->priv->address = g_inet_address_new_any (G_SOCKET_FAMILY_IPV6);
+    self->priv->address = g_inet_address_new_any (dinle_socket_family);
     self->priv->socket_address = g_inet_socket_address_new (self->priv->address,
                                                             (guint16)dinle_server_port);
     gboolean success = g_socket_listener_add_address(G_SOCKET_LISTENER(self->priv->service),
                                                      self->priv->socket_address, G_SOCKET_TYPE_STREAM,
-                                                     G_SOCKET_PROTOCOL_TCP, NULL, NULL, NULL);
+                                                     G_SOCKET_PROTOCOL_TCP, NULL, NULL, &err);
 
     if (!success || !dinle_server_port) {
-        g_print ("cannot bind on port, aborting.\n");
+        g_print ("cannot bind on port, aborting. %s\n", err->message);
         abort ();
     }
+    g_print ("dinled is now running.\n");
+
     g_object_unref (self->priv->socket_address);
     g_object_unref (self->priv->address);
     g_socket_service_start (self->priv->service);
