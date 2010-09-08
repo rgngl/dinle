@@ -15,28 +15,27 @@
    You should have received a copy of the GNU General Public License
    along with Dinle.  If not, see <http://www.gnu.org/licenses/>.
    */
-/* dinle-session-handler-auth.c */
+/* dinle-session-handler-ready.c */
 
-#include "dinle-session-handler-auth.h"
-#include "dinle-commands.h"
+#include "dinle-session-handler-ready.h"
 
-G_DEFINE_TYPE (DinleSessionHandlerAuth, dinle_session_handler_auth, DINLE_TYPE_SESSION_HANDLER)
+G_DEFINE_TYPE (DinleSessionHandlerReady, dinle_session_handler_ready, DINLE_TYPE_SESSION_HANDLER)
 
-#define SESSION_HANDLER_AUTH_PRIVATE(o) \
-  (G_TYPE_INSTANCE_GET_PRIVATE ((o), DINLE_TYPE_SESSION_HANDLER_AUTH, DinleSessionHandlerAuthPrivate))
+#define SESSION_HANDLER_READY_PRIVATE(o) \
+  (G_TYPE_INSTANCE_GET_PRIVATE ((o), DINLE_TYPE_SESSION_HANDLER_READY, DinleSessionHandlerReadyPrivate))
 
 typedef enum {
-    DINLE_AUTH_STATE_UNKNOWN,
+    DINLE_READY_STATE_UNKNOWN,
 
-    DINLE_AUTH_STATE_NEW,
+    DINLE_READY_STATE_NEW,
 
-    DINLE_AUTH_STATE_NUM
-} DinleAuthState;
+    DINLE_READY_STATE_NUM
+} DinleReadyState;
 
-struct _DinleSessionHandlerAuthPrivate
+struct _DinleSessionHandlerReadyPrivate
 {
     GMarkupParseContext *parse_context;
-    DinleAuthState state;
+    DinleReadyState state;
 };
 
 
@@ -62,7 +61,7 @@ static GMarkupParser parser = {
 
 
 static void
-dinle_session_handler_auth_get_property (GObject    *object,
+dinle_session_handler_ready_get_property (GObject    *object,
                                          guint       property_id,
                                          GValue     *value,
                                          GParamSpec *pspec)
@@ -75,7 +74,7 @@ dinle_session_handler_auth_get_property (GObject    *object,
 }
 
 static void
-dinle_session_handler_auth_set_property (GObject      *object,
+dinle_session_handler_ready_set_property (GObject      *object,
         guint         property_id,
         const GValue *value,
         GParamSpec   *pspec)
@@ -88,52 +87,52 @@ dinle_session_handler_auth_set_property (GObject      *object,
 }
 
 static void
-dinle_session_handler_auth_dispose (GObject *object)
+dinle_session_handler_ready_dispose (GObject *object)
 {
-    G_OBJECT_CLASS (dinle_session_handler_auth_parent_class)->dispose (object);
+    G_OBJECT_CLASS (dinle_session_handler_ready_parent_class)->dispose (object);
 }
 
 static void
-dinle_session_handler_auth_finalize (GObject *object)
+dinle_session_handler_ready_finalize (GObject *object)
 {
-    g_return_if_fail (DINLE_IS_SESSION_HANDLER_AUTH (object));
-    DinleSessionHandlerAuthPrivate *priv = SESSION_HANDLER_AUTH_PRIVATE (object);
+    g_return_if_fail (DINLE_IS_SESSION_HANDLER_READY (object));
+    DinleSessionHandlerReadyPrivate *priv = SESSION_HANDLER_READY_PRIVATE (object);
 
     if (priv->parse_context)
         g_markup_parse_context_free (priv->parse_context);
 
-    G_OBJECT_CLASS (dinle_session_handler_auth_parent_class)->finalize (object);
+    G_OBJECT_CLASS (dinle_session_handler_ready_parent_class)->finalize (object);
 }
 
 static void
-dinle_session_handler_auth_class_init (DinleSessionHandlerAuthClass *klass)
+dinle_session_handler_ready_class_init (DinleSessionHandlerReadyClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
     DinleSessionHandlerClass *parent_class = DINLE_SESSION_HANDLER_CLASS (klass);
 
-    g_type_class_add_private (klass, sizeof (DinleSessionHandlerAuthPrivate));
+    g_type_class_add_private (klass, sizeof (DinleSessionHandlerReadyPrivate));
 
-    object_class->get_property = dinle_session_handler_auth_get_property;
-    object_class->set_property = dinle_session_handler_auth_set_property;
-    object_class->dispose = dinle_session_handler_auth_dispose;
-    object_class->finalize = dinle_session_handler_auth_finalize;
+    object_class->get_property = dinle_session_handler_ready_get_property;
+    object_class->set_property = dinle_session_handler_ready_set_property;
+    object_class->dispose = dinle_session_handler_ready_dispose;
+    object_class->finalize = dinle_session_handler_ready_finalize;
     parent_class->process = _process;
 }
 
 static void
-dinle_session_handler_auth_init (DinleSessionHandlerAuth *self)
+dinle_session_handler_ready_init (DinleSessionHandlerReady *self)
 {
-    self->priv = SESSION_HANDLER_AUTH_PRIVATE (self);
+    self->priv = SESSION_HANDLER_READY_PRIVATE (self);
 
     self->priv->parse_context = g_markup_parse_context_new (&parser, 0, self, NULL);
-    self->priv->state = DINLE_AUTH_STATE_NEW;
+    self->priv->state = DINLE_READY_STATE_NEW;
 }
 
 static gboolean
 _process (DinleSessionHandler *handler, gchar *data, gsize len)
 {
-    g_return_val_if_fail (DINLE_IS_SESSION_HANDLER_AUTH (handler), FALSE);
-    DinleSessionHandlerAuthPrivate *priv = SESSION_HANDLER_AUTH_PRIVATE (handler);
+    g_return_val_if_fail (DINLE_IS_SESSION_HANDLER_READY (handler), FALSE);
+    DinleSessionHandlerReadyPrivate *priv = SESSION_HANDLER_READY_PRIVATE (handler);
 
     if (g_markup_parse_context_parse (priv->parse_context,
                                       data, len, NULL) == FALSE) {
@@ -148,47 +147,28 @@ _start_element (GMarkupParseContext *context, const gchar *element_name,
                 const gchar **attribute_names,const gchar **attribute_values,
                 gpointer user_data, GError **error)
 {
-    DinleSessionHandlerAuth *self = DINLE_SESSION_HANDLER_AUTH (user_data);
-    g_return_if_fail (DINLE_IS_SESSION_HANDLER_AUTH (self));
-    DinleSessionHandlerAuthPrivate *priv = SESSION_HANDLER_AUTH_PRIVATE (self);
-
-    /*g_print ("start: %s\n", element_name);*/
-    const gchar **name = attribute_names;
-    const gchar **value = attribute_values;
-
-    if (!g_strcmp0 (element_name, "dummy-login")) {
-        g_signal_emit_by_name (self, "reply", DINLE_TAG_ALONE (DINLE_REPLY_AUTHOK, ""));
-        g_signal_emit_by_name (self, "done", TRUE);
-        return;
-    }
-
-    while (*name) {
-        /*g_print ("%s = %s\n",*name, *value);*/
-        name ++;
-        value ++;
-    }
+    DinleSessionHandlerReady *self = DINLE_SESSION_HANDLER_READY (user_data);
+    g_return_if_fail (DINLE_IS_SESSION_HANDLER_READY (self));
+    DinleSessionHandlerReadyPrivate *priv = SESSION_HANDLER_READY_PRIVATE (self);
 }
 
 static void
 _text (GMarkupParseContext *context, const gchar *text, gsize text_len,
        gpointer user_data, GError **error)
 {
-    /*g_print ("text: %*s\n", (gint)text_len, text);*/
 }
 
 static void
 _end_element (GMarkupParseContext *context, const gchar *element_name,
               gpointer user_data, GError **error)
 {
-    DinleSessionHandlerAuth *self = DINLE_SESSION_HANDLER_AUTH (user_data);
-    g_return_if_fail (DINLE_IS_SESSION_HANDLER_AUTH (self));
-    DinleSessionHandlerAuthPrivate *priv = SESSION_HANDLER_AUTH_PRIVATE (self);
-
-    /*g_print ("end: %s\n", element_name);*/
+    DinleSessionHandlerReady *self = DINLE_SESSION_HANDLER_READY (user_data);
+    g_return_if_fail (DINLE_IS_SESSION_HANDLER_READY (self));
+    DinleSessionHandlerReadyPrivate *priv = SESSION_HANDLER_READY_PRIVATE (self);
 }
 
 DinleSessionHandler *
-dinle_session_handler_auth_new (void)
+dinle_session_handler_ready_new (void)
 {
-    return g_object_new (DINLE_TYPE_SESSION_HANDLER_AUTH, NULL);
+    return g_object_new (DINLE_TYPE_SESSION_HANDLER_READY, NULL);
 }

@@ -21,6 +21,7 @@
 #include "dinle-commands.h"
 #include "dinle-session-handler-auth.h"
 #include "dinle-session-handler-new.h"
+#include "dinle-session-handler-ready.h"
 #include "config.h"
 
 G_DEFINE_TYPE (DinleSession, dinle_session, G_TYPE_OBJECT)
@@ -59,6 +60,8 @@ static gboolean _network_read(GIOChannel *source, GIOCondition cond, gpointer da
 static void _handle_auth_done (DinleSessionHandler *handler,
                                gboolean success, gpointer user_data);
 static void _handle_new_done (DinleSessionHandler *handler,
+                              gboolean success, gpointer user_data);
+static void _handle_ready_done (DinleSessionHandler *handler,
                               gboolean success, gpointer user_data);
 static void _handler_reply (DinleSessionHandler *handler,
                             const gchar *reply, gpointer user_data);
@@ -232,6 +235,14 @@ _network_read (GIOChannel *source,
 }
 
 static void
+_handle_ready_done (DinleSessionHandler *handler, gboolean success, gpointer user_data)
+{
+    DinleSession *self = DINLE_SESSION (user_data);
+    g_return_if_fail (DINLE_IS_SESSION (self));
+    DinleSessionPrivate *priv = SESSION_PRIVATE (self);
+}
+
+static void
 _handle_auth_done (DinleSessionHandler *handler, gboolean success, gpointer user_data)
 {
     DinleSession *self = DINLE_SESSION (user_data);
@@ -243,11 +254,18 @@ _handle_auth_done (DinleSessionHandler *handler, gboolean success, gpointer user
 
     if (success) {
         /*TODO: add the next session handler here*/
-        g_print ("session auth->new\n");
+        g_print ("session auth->ready\n");
+        g_object_unref (priv->handler);
+        priv->state = DINLE_SESSION_STATE_READY;
+        priv->handler = dinle_session_handler_ready_new ();
+        g_signal_connect (priv->handler,
+                          "done", G_CALLBACK (_handle_ready_done), self);
+        g_signal_connect (priv->handler, "reply",
+                          G_CALLBACK (_handler_reply), self);
     } else {
         g_io_channel_write_chars (priv->channel,
                                   DINLE_TAG_ERROR ("Failed parsing message"),
-                                  -1, &len, &error);
+                                  -1, (gsize*)&len, &error);
         g_io_channel_flush (priv->channel, &error);
         dinle_session_close (self);
         g_signal_emit_by_name (self, "done");
@@ -270,14 +288,14 @@ _handle_new_done (DinleSessionHandler *handler,
         g_object_unref (priv->handler);
         priv->state = DINLE_SESSION_STATE_AUTH;
         priv->handler = dinle_session_handler_auth_new ();
-        g_signal_connect (self->priv->handler,
-                          "done", G_CALLBACK (_handle_new_done), self);
-        g_signal_connect (self->priv->handler, "reply",
+        g_signal_connect (priv->handler,
+                          "done", G_CALLBACK (_handle_auth_done), self);
+        g_signal_connect (priv->handler, "reply",
                           G_CALLBACK (_handler_reply), self);
     } else {
         g_io_channel_write_chars (priv->channel,
                                   DINLE_TAG_ERROR ("Protocol error."),
-                                  -1, &len, &error);
+                                  -1, (gsize*)&len, &error);
         g_io_channel_flush (priv->channel, &error);
         dinle_session_close (self);
         g_signal_emit_by_name (self, "done");
@@ -288,6 +306,7 @@ static void
 _handler_reply (DinleSessionHandler *handler,
                 const gchar *reply, gpointer user_data)
 {
+    g_return_if_fail (DINLE_IS_SESSION_HANDLER (handler));
     DinleSession *self = DINLE_SESSION (user_data);
     g_return_if_fail (DINLE_IS_SESSION (self));
     DinleSessionPrivate *priv = SESSION_PRIVATE (self);
@@ -295,7 +314,7 @@ _handler_reply (DinleSessionHandler *handler,
     guint len;
     GError *error = NULL;
 
-    g_io_channel_write_chars (priv->channel, reply, -1, &len, &error);
+    g_io_channel_write_chars (priv->channel, reply, -1, (gsize*)&len, &error);
     g_io_channel_flush (priv->channel, &error);
 }
 

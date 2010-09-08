@@ -21,6 +21,7 @@
 #define DINLE_PARAM_PASS "pass"
 
 #define DINLE_REPLY_CLIENTOK "client-ok"
+#define DINLE_REPLY_AUTHOK "auth-ok"
 #define DINLE_REPLY_ERROR "error"
 
 
