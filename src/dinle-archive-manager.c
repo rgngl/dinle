@@ -319,3 +319,21 @@ dinle_archive_manager_get (void)
 
     return instance;
 }
+
+void
+dinle_archive_manager_update (void)
+{
+    g_return_if_fail (DINLE_IS_ARCHIVE_MANAGER (instance));
+    DinleArchiveManagerPrivate *priv = ARCHIVE_MANAGER_PRIVATE (instance);
+
+    _update_database ();
+}
+
+DinleDb *
+dinle_archive_manager_get_db (void)
+{
+    g_return_val_if_fail (DINLE_IS_ARCHIVE_MANAGER (instance), NULL);
+    DinleArchiveManagerPrivate *priv = ARCHIVE_MANAGER_PRIVATE (instance);
+
+    return priv->db;
+}

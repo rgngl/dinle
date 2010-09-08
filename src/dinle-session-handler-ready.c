@@ -18,6 +18,11 @@
 /* dinle-session-handler-ready.c */
 
 #include "dinle-session-handler-ready.h"
+#include "dinle-media-file.h"
+#include "dinle-media-metadata.h"
+#include "dinle-commands.h"
+#include "dinle-db.h"
+#include "dinle-archive-manager.h"
 
 G_DEFINE_TYPE (DinleSessionHandlerReady, dinle_session_handler_ready, DINLE_TYPE_SESSION_HANDLER)
 
@@ -35,6 +40,9 @@ typedef enum {
 struct _DinleSessionHandlerReadyPrivate
 {
     GMarkupParseContext *parse_context;
+    GSList *search_tags;
+    GSList *search_values;
+    gchar *search_type;
     DinleReadyState state;
 };
 
@@ -101,6 +109,18 @@ dinle_session_handler_ready_finalize (GObject *object)
     if (priv->parse_context)
         g_markup_parse_context_free (priv->parse_context);
 
+    if (priv->search_tags) {
+        gint i;
+        for (i = 0; i < g_slist_length (priv->search_tags); i++)
+            g_free (g_slist_nth_data (priv->search_tags, i));
+    }
+
+    if (priv->search_values) {
+        gint i;
+        for (i = 0; i < g_slist_length (priv->search_values); i++)
+            g_free (g_slist_nth_data (priv->search_values, i));
+    }
+
     G_OBJECT_CLASS (dinle_session_handler_ready_parent_class)->finalize (object);
 }
 
@@ -126,6 +146,9 @@ dinle_session_handler_ready_init (DinleSessionHandlerReady *self)
 
     self->priv->parse_context = g_markup_parse_context_new (&parser, 0, self, NULL);
     self->priv->state = DINLE_READY_STATE_NEW;
+    self->priv->search_tags = NULL;
+    self->priv->search_values = NULL;
+    self->priv->search_type = NULL;
 }
 
 static gboolean
@@ -150,6 +173,49 @@ _start_element (GMarkupParseContext *context, const gchar *element_name,
     DinleSessionHandlerReady *self = DINLE_SESSION_HANDLER_READY (user_data);
     g_return_if_fail (DINLE_IS_SESSION_HANDLER_READY (self));
     DinleSessionHandlerReadyPrivate *priv = SESSION_HANDLER_READY_PRIVATE (self);
+
+    if (!g_strcmp0 (element_name, DINLE_COMMAND_SEARCH)) {
+        g_print ("search command started\n");
+        gchar **name = attribute_names;
+        gchar **value = attribute_values;
+        while (*name) {
+            if (!g_strcmp0 (*name, DINLE_PARAM_SEARCH_TYPE)) {
+                if (!g_strcmp0 (*value, DINLE_PVALUE_SEARCH_TAG)) {
+                    priv->search_type = DINLE_PVALUE_SEARCH_TAG;
+                    g_print ("search type: %s\n", *value);
+                } else if (!g_strcmp0 (*value, DINLE_PVALUE_SEARCH_FREE)) {
+                    priv->search_type = DINLE_PVALUE_SEARCH_FREE;
+                    g_print ("search type: %s\n", *value);
+                }
+            }
+            name ++;
+            value ++;
+        }
+    } else if (!g_strcmp0 (element_name, DINLE_COMMAND_TAG) &&
+               !g_strcmp0 (priv->search_type, DINLE_PVALUE_SEARCH_TAG)) {
+        g_print ("tag ");
+        gchar **name = attribute_names;
+        gchar **value = attribute_values;
+        gchar *field = NULL;
+        gchar *pvalue = NULL;
+        while (*name) {
+            if (!g_strcmp0 (*name, DINLE_PARAM_FIELD)) {
+                field = *value;
+                g_print ("field %s ", *value);
+            } if (!g_strcmp0 (*name, DINLE_PARAM_VALUE)) {
+                pvalue = *value;
+                g_print ("value %s ", *value);
+            }
+            name ++;
+            value ++;
+        }
+        g_print ("\n");
+        if (field && pvalue) {
+            g_print ("adding search terms %s %s\n", field, pvalue);
+            priv->search_tags = g_slist_append (priv->search_tags, g_strdup (field));
+            priv->search_values = g_slist_append (priv->search_values, g_strdup (pvalue));
+        }
+    }
 }
 
 static void
@@ -165,6 +231,58 @@ _end_element (GMarkupParseContext *context, const gchar *element_name,
     DinleSessionHandlerReady *self = DINLE_SESSION_HANDLER_READY (user_data);
     g_return_if_fail (DINLE_IS_SESSION_HANDLER_READY (self));
     DinleSessionHandlerReadyPrivate *priv = SESSION_HANDLER_READY_PRIVATE (self);
+
+    if (!g_strcmp0 (element_name, DINLE_COMMAND_SEARCH)) {
+        /*g_print ("search close %s %d\n", priv->search_type, g_slist_length (priv->search_tags));*/
+        if (!g_strcmp0 (priv->search_type, DINLE_PVALUE_SEARCH_TAG) &&
+             g_slist_length (priv->search_tags) > 0) {
+            /*g_print ("building taglist\n");*/
+            gchar **tag_pairs = g_malloc0 (sizeof(gchar*) * (g_slist_length (priv->search_tags)*2 + 1));
+            guint i = 0;
+            guint index = 0;
+            for (i = 0; i < g_slist_length (priv->search_tags); i++) {
+                tag_pairs[index++] = g_slist_nth_data (priv->search_tags, i);
+                g_print (g_slist_nth_data (priv->search_tags, i));
+                tag_pairs[index++] = g_slist_nth_data (priv->search_values, i);
+                g_print (g_slist_nth_data (priv->search_values, i));
+            }
+
+            DinleDb *db = dinle_archive_manager_get_db ();
+            DinleMediaFile** mflist = dinle_db_search_by_tags (db, tag_pairs);
+            if (mflist) {
+                g_signal_emit_by_name (self, "reply", DINLE_TAG_START (DINLE_REPLY_SEARCHRESULT, ""));
+            }
+            DinleMediaFile** mfiter = mflist;
+            while (mfiter && *mfiter) {
+                /*g_print ("%s\n", dinle_media_file_get_path (*mfiter));*/
+                GString *filetag = g_string_new ("");
+                gchar *esc = g_markup_printf_escaped (DINLE_TAG_START (DINLE_REPLY_TRACK, DINLE_PARAM_TRACKID"='%s'")"\n",
+                                              dinle_media_file_get_hash (*mfiter));
+                g_string_append (filetag, esc);
+                g_free (esc);
+                const DinleMediaMetadata *md = dinle_media_file_get_metadata (*mfiter);
+                gchar **fvlist = dinle_media_metadata_get_field_value_list (md);
+                gchar **fviter = fvlist;
+                while (fviter && *fviter) {
+                    esc = g_markup_printf_escaped (DINLE_TAG_ALONE (DINLE_REPLY_TAG, "%s='%s'"), *fviter, *(fviter+1));
+                    g_string_append (filetag, esc);
+                    g_free (esc);
+                    fviter+=2;
+                }
+                g_string_append (filetag, DINLE_TAG_END (DINLE_REPLY_TRACK)"\n");
+                g_signal_emit_by_name (self, "reply", filetag->str);
+                mfiter++;
+            }
+            if (mflist) {
+                g_signal_emit_by_name (self, "reply", DINLE_TAG_END ("search-result")"\n");
+            }
+            g_strfreev (tag_pairs);
+            g_slist_free (priv->search_tags);
+            priv->search_tags = NULL;
+            g_slist_free (priv->search_values);
+            priv->search_values = NULL;
+        }
+    }
 }
 
 DinleSessionHandler *

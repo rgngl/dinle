@@ -221,22 +221,17 @@ dinle_media_file_set (DinleMediaFile *self, const gchar *file)
     return TRUE;
 }
 
-/*gboolean*/
-/*dinle_media_file_set_with_hash_size (DinleMediaFile *self, const gchar *file, const gchar *hash, guint size)*/
-/*{*/
-    /*g_return_val_if_fail (DINLE_IS_MEDIA_FILE (self), FALSE);*/
-    /*DinleMediaFilePrivate *priv = MEDIA_FILE_PRIVATE (self);*/
+void
+dinle_media_file_set_hash_size (DinleMediaFile *self, const gchar *hash, guint size)
+{
+    g_return_val_if_fail (DINLE_IS_MEDIA_FILE (self), FALSE);
+    DinleMediaFilePrivate *priv = MEDIA_FILE_PRIVATE (self);
 
-    /*if (!dinle_media_file_set (self, file))*/
-        /*return FALSE;*/
+    g_free (priv->hash);
+    priv->hash = g_strdup (hash);
 
-    /*g_free (priv->hash);*/
-    /*priv->hash = g_strdup (hash);*/
-
-    /*priv->size = size;*/
-
-    /*return TRUE;*/
-/*}*/
+    priv->size = size;
+}
 
 const gchar *
 dinle_media_file_get_path (DinleMediaFile *self)

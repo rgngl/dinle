@@ -42,13 +42,17 @@ G_DEFINE_TYPE (DinleDbSqlite, dinle_db_sqlite, DINLE_TYPE_DB)
                            "VALUES ('%q', '%q', '%q');"
 #define METADATA_TABLE_REMOVE "DELETE FROM " METADATA_TABLE "WHERE path='%q';"
 #define METADATA_TABLE_GET_BY_NAME "SELECT path, field, value FROM " METADATA_TABLE " WHERE path='%q';"
-#define METADATA_TABLE_GET_BY_TAGS "SELECT DISTINCT path FROM " METADATA_TABLE \
-                                   " WHERE field=='%q' and value=='%q'"
-#define METADATA_TABLE_GET_BY_TAGS_A " INTERSECT " METADATA_TABLE_GET_BY_TAGS
-#define METADATA_TABLE_GET_BY_TAGS_T " ; "
-#define METADATA_TABLE_GET_KEYWORDS "SELECT DISTINCT path FROM " METADATA_TABLE " WHERE 1=1 "
+#define METADATA_TABLE_GET_BY_TAGS   "SELECT path, hash, size FROM " FILES_TABLE " "\
+                                     "WHERE path IN ( "
+#define METADATA_TABLE_GET_BY_TAGS_I "SELECT DISTINCT path FROM " METADATA_TABLE \
+                                     " WHERE field=='%q' and value=='%q'"
+#define METADATA_TABLE_GET_BY_TAGS_A " INTERSECT " METADATA_TABLE_GET_BY_TAGS_I
+#define METADATA_TABLE_GET_BY_TAGS_T ") ; "
+#define METADATA_TABLE_GET_KEYWORDS "SELECT path, hash, size FROM " FILES_TABLE \
+                                    "WHERE path IN (" \
+                                    "SELECT DISTINCT path FROM " METADATA_TABLE " WHERE 1=1 "
 #define METADATA_TABLE_GET_KEYWORDS_A "AND value LIKE '%%%q%%' "
-#define METADATA_TABLE_GET_KEYWORDS_T " ; "
+#define METADATA_TABLE_GET_KEYWORDS_T ") ; "
 #define METADATA_TABLE_GET_FILE_TAGS "SELECT field, value FROM metadata where path='%q';"
 
 #define TABLE_CHECK_QUERY "SELECT name FROM sqlite_master WHERE type='table' AND name='%q';"
@@ -331,13 +335,13 @@ _search_by_tags (DinleDb *db, const gchar **pairs)
     g_return_val_if_fail (priv->db, NULL);
     g_return_val_if_fail (pairs, NULL);
 
-    gchar *query = g_strdup ("");
+    gchar *query = g_strdup (METADATA_TABLE_GET_BY_TAGS);
 
     gint i = 0;
     const gchar *tag = pairs[i];
     const gchar *term = pairs[++i];
 
-    gchar *eq = sqlite3_mprintf (METADATA_TABLE_GET_BY_TAGS, tag, term);
+    gchar *eq = sqlite3_mprintf (METADATA_TABLE_GET_BY_TAGS_I, tag, term);
     gchar *temp = g_strconcat (query, eq, NULL);
     sqlite3_free (eq);
     g_free (query);
@@ -372,8 +376,12 @@ _search_by_tags (DinleDb *db, const gchar **pairs)
 
     if (rows >= 1) {
         list = g_malloc0 (sizeof(DinleMediaFile*)*(rows + 1));
-        for (i = 1; i <= rows; i+=cols) {
-            list[i-1] = dinle_media_file_new (table[i]);
+        gint index = 0;
+        for (i = cols; i <= rows; i+=cols) {
+            list[index] = dinle_media_file_new (table[i]);
+            if (list[index])
+                dinle_media_file_set_hash_size (list[index], table[i+1], table[i+2]);
+            index++;
         }
     }
 
