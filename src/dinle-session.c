@@ -253,7 +253,6 @@ _handle_auth_done (DinleSessionHandler *handler, gboolean success, gpointer user
     GError *error = NULL;
 
     if (success) {
-        /*TODO: add the next session handler here*/
         g_print ("session auth->ready\n");
         g_object_unref (priv->handler);
         priv->state = DINLE_SESSION_STATE_READY;

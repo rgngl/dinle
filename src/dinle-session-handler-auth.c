@@ -29,6 +29,7 @@ typedef enum {
     DINLE_AUTH_STATE_UNKNOWN,
 
     DINLE_AUTH_STATE_NEW,
+    DINLE_AUTH_STATE_DONE,
 
     DINLE_AUTH_STATE_NUM
 } DinleAuthState;
@@ -101,8 +102,6 @@ dinle_session_handler_auth_finalize (GObject *object)
 
     if (priv->parse_context)
         g_markup_parse_context_free (priv->parse_context);
-
-    G_OBJECT_CLASS (dinle_session_handler_auth_parent_class)->finalize (object);
 }
 
 static void
@@ -135,10 +134,21 @@ _process (DinleSessionHandler *handler, gchar *data, gsize len)
     g_return_val_if_fail (DINLE_IS_SESSION_HANDLER_AUTH (handler), FALSE);
     DinleSessionHandlerAuthPrivate *priv = SESSION_HANDLER_AUTH_PRIVATE (handler);
 
-    if (g_markup_parse_context_parse (priv->parse_context,
-                                      data, len, NULL) == FALSE) {
-        g_warning ("failed parsing commands.\n");
-        return FALSE;
+    switch (priv->state)
+    {
+        case DINLE_AUTH_STATE_NEW:
+            if (g_markup_parse_context_parse (priv->parse_context,
+                        data, len, NULL) == FALSE) {
+                g_warning ("failed parsing commands.\n");
+                return FALSE;
+            }
+            break;
+        case DINLE_AUTH_STATE_DONE:
+            g_signal_emit_by_name (handler, "done", TRUE);
+            break;
+        default:
+            g_warning ("unknown auth state...\n");
+            return FALSE;
     }
     return TRUE;
 }
@@ -158,7 +168,7 @@ _start_element (GMarkupParseContext *context, const gchar *element_name,
 
     if (!g_strcmp0 (element_name, "dummy-login")) {
         g_signal_emit_by_name (self, "reply", DINLE_TAG_ALONE (DINLE_REPLY_AUTHOK, ""));
-        g_signal_emit_by_name (self, "done", TRUE);
+        priv->state = DINLE_AUTH_STATE_DONE;
         return;
     }
 
