@@ -67,8 +67,8 @@ static gboolean _set_db (DinleDb *db, const gchar *name);
 static gboolean _add_file (DinleDb *db, DinleMediaFile *file);
 static gboolean _remove_file (DinleDb *db, const gchar *file);
 static DinleMediaFile* _get_file_by_name (DinleDb *db, const gchar *file);
-static DinleMediaFile** _search_keywords_valist (DinleDb *db, const gchar *first_key, va_list vars);
-static DinleMediaFile** _search_by_tags_valist (DinleDb *db, const gchar *first_tag, va_list vars);
+static DinleMediaFile** _search_keywords (DinleDb *db, const gchar **keywords);
+static DinleMediaFile** _search_by_tags (DinleDb *db, const gchar **pairs);
 static DinleMediaMetadata* _get_file_metadata (DinleDb *db, const gchar *file);
 static gchar** _get_files (DinleDb *db);
 static gboolean _file_exists (DinleDb *db, const gchar *file);
@@ -171,8 +171,8 @@ dinle_db_sqlite_class_init (DinleDbSqliteClass *klass)
     parent_class->drop = _drop;
     parent_class->file_count = _file_count;
     parent_class->get_file_by_name = _get_file_by_name;
-    parent_class->search_keywords_valist = _search_keywords_valist;
-    parent_class->search_by_tags_valist = _search_by_tags_valist;
+    parent_class->search_keywords = _search_keywords;
+    parent_class->search_by_tags = _search_by_tags;
     parent_class->get_files = _get_files;
     parent_class->file_exists = _file_exists;
     parent_class->remove_file = _remove_file;
@@ -277,23 +277,25 @@ _get_file_by_name (DinleDb *db, const gchar *name)
 }
 
 static DinleMediaFile **
-_search_keywords_valist (DinleDb *db, const gchar *first_key, va_list vars)
+_search_keywords (DinleDb *db, const gchar **keywords)
 {
     DinleMediaFile **list = NULL;
 
     g_return_val_if_fail (DINLE_IS_DB_SQLITE (db), NULL);
     DinleDbSqlitePrivate *priv = DB_SQLITE_PRIVATE (db);
     g_return_val_if_fail (priv->db, NULL);
+    g_return_val_if_fail (keywords, NULL);
 
     GString *query = g_string_new (METADATA_TABLE_GET_KEYWORDS);
 
-    const gchar *key = first_key;
+    gint i = 0;
+    const gchar *key = keywords[i];
     while (key) {
         gchar *eq = sqlite3_mprintf (METADATA_TABLE_GET_KEYWORDS_A, key);
         g_string_append (query, eq);
         sqlite3_free (eq);
 
-        key = va_arg (vars, const gchar *);
+        key = keywords[++i];
     }
 
     gchar **table = NULL;
@@ -305,7 +307,6 @@ _search_keywords_valist (DinleDb *db, const gchar *first_key, va_list vars)
         g_print ("error happened :/ %s\n", error_msg);
         goto clean;
     }
-    int i;
 
     if (rows >= 1) {
         list = g_malloc0 (sizeof(DinleMediaFile*)*(rows + 1));
@@ -321,18 +322,20 @@ clean:
 }
 
 static DinleMediaFile **
-_search_by_tags_valist (DinleDb *db, const gchar *first_tag, va_list vars)
+_search_by_tags (DinleDb *db, const gchar **pairs)
 {
     DinleMediaFile **list = NULL;
 
     g_return_val_if_fail (DINLE_IS_DB_SQLITE (db), NULL);
     DinleDbSqlitePrivate *priv = DB_SQLITE_PRIVATE (db);
     g_return_val_if_fail (priv->db, NULL);
+    g_return_val_if_fail (pairs, NULL);
 
     gchar *query = g_strdup ("");
 
-    const gchar *tag = first_tag;
-    const gchar *term = va_arg (vars, const gchar *);
+    gint i = 0;
+    const gchar *tag = pairs[i];
+    const gchar *term = pairs[++i];
 
     gchar *eq = sqlite3_mprintf (METADATA_TABLE_GET_BY_TAGS, tag, term);
     gchar *temp = g_strconcat (query, eq, NULL);
@@ -340,9 +343,9 @@ _search_by_tags_valist (DinleDb *db, const gchar *first_tag, va_list vars)
     g_free (query);
     query = temp;
 
-    tag = va_arg (vars, const gchar *);
+    tag = pairs[++i];
     while (tag) {
-        term = va_arg (vars, const gchar *);
+        term = pairs[++i];
 
         eq = sqlite3_mprintf (METADATA_TABLE_GET_BY_TAGS_A, tag, term);
         temp = g_strconcat (query, eq, NULL);
@@ -350,7 +353,7 @@ _search_by_tags_valist (DinleDb *db, const gchar *first_tag, va_list vars)
         g_free (query);
         query = temp;
 
-        tag = va_arg (vars, const gchar *);
+        tag = pairs[++i];
     }
 
     temp = g_strconcat (query, METADATA_TABLE_GET_BY_TAGS_T, NULL);
@@ -366,7 +369,6 @@ _search_by_tags_valist (DinleDb *db, const gchar *first_tag, va_list vars)
         g_print ("error happened :/ %s\n", error_msg);
         goto clean;
     }
-    int i;
 
     if (rows >= 1) {
         list = g_malloc0 (sizeof(DinleMediaFile*)*(rows + 1));

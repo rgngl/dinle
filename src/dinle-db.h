@@ -67,8 +67,8 @@ struct _DinleDbClass
     gboolean (*set_db) (DinleDb *db, const gchar *name);
     gboolean (*add_file) (DinleDb *db, DinleMediaFile *file);
     DinleMediaFile* (*get_file_by_name) (DinleDb *db, const gchar *name);
-    DinleMediaFile** (*search_by_tags_valist) (DinleDb *db, const gchar *first_tag, va_list vars);
-    DinleMediaFile** (*search_keywords_valist) (DinleDb *db, const gchar *first_key, va_list vars);
+    DinleMediaFile** (*search_by_tags) (DinleDb *db, const gchar **pairs);
+    DinleMediaFile** (*search_keywords) (DinleDb *db, const gchar **pairs);
     DinleMediaMetadata* (*get_file_metadata) (DinleDb *db, const gchar *file);
     gchar** (*get_files) (DinleDb *db);
     gboolean (*file_exists) (DinleDb *db, const gchar *file);
@@ -84,10 +84,8 @@ gboolean dinle_db_set_db (DinleDb *db, const gchar *name);
 
 gboolean dinle_db_add_file (DinleDb *db, DinleMediaFile *file);
 DinleMediaFile* dinle_db_get_file_by_name (DinleDb *db, const gchar *name);
-DinleMediaFile** dinle_db_search_keywords_valist (DinleDb *db, const gchar *first_key, va_list vars);
-DinleMediaFile** dinle_db_search_keywords (DinleDb *db, const gchar *first_key, ...) G_GNUC_NULL_TERMINATED;
-DinleMediaFile** dinle_db_search_by_tags_valist (DinleDb *db, const gchar *first_tag, va_list vars);
-DinleMediaFile** dinle_db_search_by_tags (DinleDb *db, const gchar *first_tag, ...) G_GNUC_NULL_TERMINATED;
+DinleMediaFile** dinle_db_search_keywords (DinleDb *db, const gchar **keywords);
+DinleMediaFile** dinle_db_search_by_tags (DinleDb *db, const gchar **pairs);
 DinleMediaMetadata* dinle_db_get_file_metadata (DinleDb *db, const gchar *file);
 gchar** dinle_db_get_files (DinleDb *db);
 gboolean dinle_db_file_exists (DinleDb *db, const gchar *file);
