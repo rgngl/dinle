@@ -85,7 +85,9 @@ dinle_db_class_init (DinleDbClass *klass)
     klass->set_db = NULL;
     klass->add_file = NULL;
     klass->get_file_by_name = NULL;
+    klass->search_keywords_valist = NULL;
     klass->search_by_tags_valist = NULL;
+    klass->get_file_metadata = NULL;
     klass->get_files = NULL;
     klass->remove_file = NULL;
     klass->unset = NULL;
@@ -136,6 +138,36 @@ dinle_db_get_file_by_name (DinleDb *db, const gchar *name)
 }
 
 DinleMediaFile **
+dinle_db_search_keywords_valist (DinleDb *db, const gchar *first_key, va_list vars)
+{
+    g_return_val_if_fail (DINLE_IS_DB (db), NULL);
+
+    if (DINLE_DB_GET_CLASS (db)->search_keywords_valist) {
+        DinleMediaFile **list = DINLE_DB_GET_CLASS (db)->search_keywords_valist (db,
+                                                                                 first_key,
+                                                                                 vars);
+        return list;
+    }
+
+    g_critical ("Pure virtual function search_keywords called...\n");
+    return NULL;
+}
+
+DinleMediaFile **
+dinle_db_search_keywords (DinleDb *db, const gchar *first_key, ...)
+{
+    va_list var_args;
+
+    g_return_val_if_fail (DINLE_IS_DB (db), NULL);
+
+    va_start (var_args, first_key);
+    DinleMediaFile **list = dinle_db_search_keywords_valist (db, first_key, var_args);
+    va_end (var_args);
+
+    return list;
+}
+
+DinleMediaFile **
 dinle_db_search_by_tags_valist (DinleDb *db, const gchar *first_tag, va_list vars)
 {
     g_return_val_if_fail (DINLE_IS_DB (db), NULL);
@@ -163,6 +195,19 @@ dinle_db_search_by_tags (DinleDb *db, const gchar *first_tag, ...)
     va_end (var_args);
 
     return list;
+}
+
+DinleMediaMetadata *
+dinle_db_get_file_metadata (DinleDb *db, const gchar *name)
+{
+    g_return_val_if_fail (DINLE_IS_DB (db), NULL);
+
+    if (DINLE_DB_GET_CLASS (db)->get_file_metadata) {
+        return DINLE_DB_GET_CLASS (db)->get_file_metadata (db, name);
+    }
+
+    g_critical ("Pure virtual function get_file_metadata called...\n");
+    return NULL;
 }
 
 gchar **

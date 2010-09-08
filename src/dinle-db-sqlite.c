@@ -46,6 +46,10 @@ G_DEFINE_TYPE (DinleDbSqlite, dinle_db_sqlite, DINLE_TYPE_DB)
                                    " WHERE field=='%q' and value=='%q'"
 #define METADATA_TABLE_GET_BY_TAGS_A " INTERSECT " METADATA_TABLE_GET_BY_TAGS
 #define METADATA_TABLE_GET_BY_TAGS_T " ; "
+#define METADATA_TABLE_GET_KEYWORDS "SELECT DISTINCT path FROM " METADATA_TABLE " WHERE 1=1 "
+#define METADATA_TABLE_GET_KEYWORDS_A "AND value LIKE '%%%q%%' "
+#define METADATA_TABLE_GET_KEYWORDS_T " ; "
+#define METADATA_TABLE_GET_FILE_TAGS "SELECT field, value FROM metadata where path='%q';"
 
 #define TABLE_CHECK_QUERY "SELECT name FROM sqlite_master WHERE type='table' AND name='%q';"
 #define TABLE_CREATE_QUERY "CREATE TABLE %s (%s) ;"
@@ -63,7 +67,9 @@ static gboolean _set_db (DinleDb *db, const gchar *name);
 static gboolean _add_file (DinleDb *db, DinleMediaFile *file);
 static gboolean _remove_file (DinleDb *db, const gchar *file);
 static DinleMediaFile* _get_file_by_name (DinleDb *db, const gchar *file);
+static DinleMediaFile** _search_keywords_valist (DinleDb *db, const gchar *first_key, va_list vars);
 static DinleMediaFile** _search_by_tags_valist (DinleDb *db, const gchar *first_tag, va_list vars);
+static DinleMediaMetadata* _get_file_metadata (DinleDb *db, const gchar *file);
 static gchar** _get_files (DinleDb *db);
 static gboolean _file_exists (DinleDb *db, const gchar *file);
 static gboolean _unset (DinleDb *db);
@@ -165,6 +171,7 @@ dinle_db_sqlite_class_init (DinleDbSqliteClass *klass)
     parent_class->drop = _drop;
     parent_class->file_count = _file_count;
     parent_class->get_file_by_name = _get_file_by_name;
+    parent_class->search_keywords_valist = _search_keywords_valist;
     parent_class->search_by_tags_valist = _search_by_tags_valist;
     parent_class->get_files = _get_files;
     parent_class->file_exists = _file_exists;
@@ -270,6 +277,50 @@ _get_file_by_name (DinleDb *db, const gchar *name)
 }
 
 static DinleMediaFile **
+_search_keywords_valist (DinleDb *db, const gchar *first_key, va_list vars)
+{
+    DinleMediaFile **list = NULL;
+
+    g_return_val_if_fail (DINLE_IS_DB_SQLITE (db), NULL);
+    DinleDbSqlitePrivate *priv = DB_SQLITE_PRIVATE (db);
+    g_return_val_if_fail (priv->db, NULL);
+
+    GString *query = g_string_new (METADATA_TABLE_GET_KEYWORDS);
+
+    const gchar *key = first_key;
+    while (key) {
+        gchar *eq = sqlite3_mprintf (METADATA_TABLE_GET_KEYWORDS_A, key);
+        g_string_append (query, eq);
+        sqlite3_free (eq);
+
+        key = va_arg (vars, const gchar *);
+    }
+
+    gchar **table = NULL;
+    gint rows, cols;
+    gchar *error_msg = NULL;
+
+    gint result = sqlite3_get_table (priv->db, query->str, &table, &rows, &cols, &error_msg);
+    if (result != SQLITE_OK) {
+        g_print ("error happened :/ %s\n", error_msg);
+        goto clean;
+    }
+    int i;
+
+    if (rows >= 1) {
+        list = g_malloc0 (sizeof(DinleMediaFile*)*(rows + 1));
+        for (i = 1; i <= rows; i+=cols) {
+            list[i-1] = dinle_media_file_new (table[i]);
+        }
+    }
+
+clean:
+    sqlite3_free_table (table);
+    g_string_free (query, TRUE);
+    return list;
+}
+
+static DinleMediaFile **
 _search_by_tags_valist (DinleDb *db, const gchar *first_tag, va_list vars)
 {
     DinleMediaFile **list = NULL;
@@ -311,8 +362,10 @@ _search_by_tags_valist (DinleDb *db, const gchar *first_tag, va_list vars)
     gchar *error_msg = NULL;
 
     gint result = sqlite3_get_table (priv->db, query, &table, &rows, &cols, &error_msg);
-    if (result != SQLITE_OK)
+    if (result != SQLITE_OK) {
         g_print ("error happened :/ %s\n", error_msg);
+        goto clean;
+    }
     int i;
 
     if (rows >= 1) {
@@ -322,9 +375,44 @@ _search_by_tags_valist (DinleDb *db, const gchar *first_tag, va_list vars)
         }
     }
 
+clean:
     sqlite3_free_table (table);
     g_free (query);
     return list;
+}
+
+static DinleMediaMetadata* _get_file_metadata (DinleDb *db, const gchar *file)
+{
+    DinleMediaMetadata *md = NULL;
+
+    g_return_val_if_fail (DINLE_IS_DB_SQLITE (db), NULL);
+    DinleDbSqlitePrivate *priv = DB_SQLITE_PRIVATE (db);
+    g_return_val_if_fail (priv->db, NULL);
+
+    gchar *query = sqlite3_mprintf (METADATA_TABLE_GET_FILE_TAGS, file);
+
+    gchar **table = NULL;
+    gint rows, cols;
+    gchar *error_msg = NULL;
+
+    gint result = sqlite3_get_table (priv->db, query, &table, &rows, &cols, &error_msg);
+    if (result != SQLITE_OK) {
+        g_print ("error happened :/ %s\n", error_msg);
+        goto clean;
+    }
+    int i;
+
+    if (rows >=1) {
+        md = dinle_media_metadata_new ();
+        for (i = 1; i <= rows; i+=cols) {
+            g_object_set (md, table[i], table[i+1], NULL);
+        }
+    }
+
+clean:
+    sqlite3_free_table (table);
+    g_free (query);
+    return md;
 }
 
 static gchar **
