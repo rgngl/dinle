@@ -153,6 +153,13 @@ _process (DinleSessionHandler *handler, gchar *data, gsize len)
     return TRUE;
 }
 
+static gboolean
+_process_timeout (gpointer data)
+{
+    _process (DINLE_SESSION_HANDLER (data), "", 1);
+    return FALSE;
+}
+
 static void
 _start_element (GMarkupParseContext *context, const gchar *element_name,
                 const gchar **attribute_names,const gchar **attribute_values,
@@ -169,6 +176,9 @@ _start_element (GMarkupParseContext *context, const gchar *element_name,
     if (!g_strcmp0 (element_name, "dummy-login")) {
         g_signal_emit_by_name (self, "reply", DINLE_TAG_ALONE (DINLE_REPLY_AUTHOK, ""));
         priv->state = DINLE_AUTH_STATE_DONE;
+        /* this is an ugly hack, because we can't send the signal from this
+         * handler.*/
+        g_timeout_add (10, _process_timeout, user_data);
         return;
     }
 
