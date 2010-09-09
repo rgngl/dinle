@@ -50,9 +50,10 @@ G_DEFINE_TYPE (DinleDbSqlite, dinle_db_sqlite, DINLE_TYPE_DB)
 #define METADATA_TABLE_GET_BY_TAGS_T ") ; "
 #define METADATA_TABLE_GET_KEYWORDS "SELECT path, hash, size FROM " FILES_TABLE " "\
                                     "WHERE path IN (" \
-                                    "SELECT DISTINCT path FROM " METADATA_TABLE " WHERE 1=1 "
-#define METADATA_TABLE_GET_KEYWORDS_A "AND value LIKE '%%%q%%' "
-#define METADATA_TABLE_GET_KEYWORDS_T ") ; "
+                                    "SELECT DISTINCT path FROM " METADATA_TABLE " WHERE ("
+#define METADATA_TABLE_GET_KEYWORDS_A " value LIKE '%%%q%%' "
+#define METADATA_TABLE_GET_KEYWORDS_O " OR "
+#define METADATA_TABLE_GET_KEYWORDS_T ")) ; "
 #define METADATA_TABLE_GET_FILE_TAGS "SELECT field, value FROM metadata where path='%q';"
 
 #define TABLE_CHECK_QUERY "SELECT name FROM sqlite_master WHERE type='table' AND name='%q';"
@@ -296,6 +297,8 @@ _search_keywords (DinleDb *db, const gchar **keywords)
     const gchar *key = keywords[i];
     while (key) {
         gchar *eq = sqlite3_mprintf (METADATA_TABLE_GET_KEYWORDS_A, key);
+        if (i > 0)
+            g_string_append (query, METADATA_TABLE_GET_KEYWORDS_O);
         g_string_append (query, eq);
         sqlite3_free (eq);
 
@@ -317,7 +320,7 @@ _search_keywords (DinleDb *db, const gchar **keywords)
     if (rows >= 1) {
         list = g_malloc0 (sizeof(DinleMediaFile*)*(rows + 1));
         gint index = 0;
-        for (i = 1; i <= rows*cols; i+=cols) {
+        for (i = cols; i <= rows*cols; i+=cols) {
             list[index] = dinle_media_file_new (table[i]);
             if (list[index])
                 dinle_media_file_set_hash_size (list[index], table[i+1], table[i+2]);
