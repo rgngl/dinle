@@ -22,6 +22,7 @@
 
 #include <glib-object.h>
 #include "dinle-db.h"
+#include "dinle-playlist.h"
 
 G_BEGIN_DECLS
 
@@ -68,6 +69,8 @@ GType dinle_archive_manager_get_type (void) G_GNUC_CONST;
 DinleArchiveManager *dinle_archive_manager_get (void);
 void dinle_archive_manager_update (void);
 DinleDb* dinle_archive_manager_get_db (void);
+DinlePlaylist* dinle_archive_manager_search_tags (gchar **tags);
+DinlePlaylist* dinle_archive_manager_search_keywords (gchar **keywords);
 
 G_END_DECLS
 

@@ -48,7 +48,7 @@ G_DEFINE_TYPE (DinleDbSqlite, dinle_db_sqlite, DINLE_TYPE_DB)
                                      " WHERE field=='%q' and value=='%q'"
 #define METADATA_TABLE_GET_BY_TAGS_A " INTERSECT " METADATA_TABLE_GET_BY_TAGS_I
 #define METADATA_TABLE_GET_BY_TAGS_T ") ; "
-#define METADATA_TABLE_GET_KEYWORDS "SELECT path, hash, size FROM " FILES_TABLE \
+#define METADATA_TABLE_GET_KEYWORDS "SELECT path, hash, size FROM " FILES_TABLE " "\
                                     "WHERE path IN (" \
                                     "SELECT DISTINCT path FROM " METADATA_TABLE " WHERE 1=1 "
 #define METADATA_TABLE_GET_KEYWORDS_A "AND value LIKE '%%%q%%' "
@@ -302,20 +302,26 @@ _search_keywords (DinleDb *db, const gchar **keywords)
         key = keywords[++i];
     }
 
+    g_string_append (query, METADATA_TABLE_GET_KEYWORDS_T);
+
     gchar **table = NULL;
     gint rows, cols;
     gchar *error_msg = NULL;
 
     gint result = sqlite3_get_table (priv->db, query->str, &table, &rows, &cols, &error_msg);
     if (result != SQLITE_OK) {
-        g_print ("error happened :/ %s\n", error_msg);
+        g_print ("error happened :/ %s\nquery: %s", error_msg, query->str);
         goto clean;
     }
 
     if (rows >= 1) {
         list = g_malloc0 (sizeof(DinleMediaFile*)*(rows + 1));
-        for (i = 1; i <= rows; i+=cols) {
-            list[i-1] = dinle_media_file_new (table[i]);
+        gint index = 0;
+        for (i = 1; i <= rows*cols; i+=cols) {
+            list[index] = dinle_media_file_new (table[i]);
+            if (list[index])
+                dinle_media_file_set_hash_size (list[index], table[i+1], table[i+2]);
+            index++;
         }
     }
 
@@ -363,6 +369,7 @@ _search_by_tags (DinleDb *db, const gchar **pairs)
     temp = g_strconcat (query, METADATA_TABLE_GET_BY_TAGS_T, NULL);
     g_free (query);
     query = temp;
+    /*g_print ("tag search query: %s\n", query);*/
 
     gchar **table = NULL;
     gint rows, cols;
@@ -370,14 +377,15 @@ _search_by_tags (DinleDb *db, const gchar **pairs)
 
     gint result = sqlite3_get_table (priv->db, query, &table, &rows, &cols, &error_msg);
     if (result != SQLITE_OK) {
-        g_print ("error happened :/ %s\n", error_msg);
+        g_print ("error happened :/ %s\nquery: %s", error_msg, query);
         goto clean;
     }
+    /*g_print ("rows: %d cols: %d\n", rows, cols);*/
 
     if (rows >= 1) {
         list = g_malloc0 (sizeof(DinleMediaFile*)*(rows + 1));
         gint index = 0;
-        for (i = cols; i <= rows; i+=cols) {
+        for (i = cols; i <= rows*cols; i+=cols) {
             list[index] = dinle_media_file_new (table[i]);
             if (list[index])
                 dinle_media_file_set_hash_size (list[index], table[i+1], table[i+2]);

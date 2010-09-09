@@ -337,3 +337,49 @@ dinle_archive_manager_get_db (void)
 
     return priv->db;
 }
+
+DinlePlaylist *
+dinle_archive_manager_search_tags (gchar **tags)
+{
+    g_return_val_if_fail (DINLE_IS_ARCHIVE_MANAGER (instance), NULL);
+    DinleArchiveManagerPrivate *priv = ARCHIVE_MANAGER_PRIVATE (instance);
+    g_return_val_if_fail (DINLE_IS_DB (priv->db), NULL);
+
+    DinlePlaylist *pl = NULL;
+
+    DinleMediaFile** mflist = dinle_db_search_by_tags (priv->db, tags);
+    if (mflist) {
+        DinleMediaFile **iter = mflist;
+        pl = dinle_playlist_new (DINLE_PLAYLIST_TYPE_TAG);
+        while (*iter) {
+            dinle_playlist_add (pl, *iter);
+            g_object_unref (*iter);
+            iter++;
+        }
+    }
+
+    return pl;
+}
+
+DinlePlaylist *
+dinle_archive_manager_search_keywords (gchar **keywords)
+{
+    g_return_val_if_fail (DINLE_IS_ARCHIVE_MANAGER (instance), NULL);
+    DinleArchiveManagerPrivate *priv = ARCHIVE_MANAGER_PRIVATE (instance);
+    g_return_val_if_fail (DINLE_IS_DB (priv->db), NULL);
+
+    DinlePlaylist *pl = NULL;
+
+    DinleMediaFile** mflist = dinle_db_search_keywords (priv->db, keywords);
+    if (mflist) {
+        DinleMediaFile **iter = mflist;
+        pl = dinle_playlist_new (DINLE_PLAYLIST_TYPE_FREE);
+        while (*iter) {
+            dinle_playlist_add (pl, *iter);
+            g_object_unref (*iter);
+            iter++;
+        }
+    }
+
+    return pl;
+}
