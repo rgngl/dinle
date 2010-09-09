@@ -13,3 +13,4 @@ config.sub
 configure
 missing
 config.log
+cscope*
