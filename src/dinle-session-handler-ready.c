@@ -282,9 +282,17 @@ _end_element (GMarkupParseContext *context, const gchar *element_name,
             priv->search_values = NULL;
         } else if (!g_strcmp0 (priv->search_type, DINLE_PVALUE_SEARCH_FREE) &&
                    priv->search_free) {
+
+            /*strip out non-ascii chars, we don't use them in searches.*/
+            gchar* j = priv->search_free;
+            while (*j) {
+                if (!g_ascii_isprint (*j))
+                    *j = ' ';
+                j++;
+            }
             gchar *s = g_strstrip (priv->search_free);
+
             gchar **keywords = g_strsplit_set (s, " \n\t\r", 0);
-            gchar **i = keywords;
 
             DinlePlaylist *pl = dinle_archive_manager_search_keywords (keywords);
             if (pl) {
