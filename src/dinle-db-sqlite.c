@@ -49,11 +49,10 @@ G_DEFINE_TYPE (DinleDbSqlite, dinle_db_sqlite, DINLE_TYPE_DB)
 #define METADATA_TABLE_GET_BY_TAGS_A " INTERSECT " METADATA_TABLE_GET_BY_TAGS_I
 #define METADATA_TABLE_GET_BY_TAGS_T ") ; "
 #define METADATA_TABLE_GET_KEYWORDS "SELECT path, hash, size FROM " FILES_TABLE " "\
-                                    "WHERE path IN (" \
-                                    "SELECT DISTINCT path FROM " METADATA_TABLE " WHERE ("
-#define METADATA_TABLE_GET_KEYWORDS_A " value LIKE '%%%q%%' "
-#define METADATA_TABLE_GET_KEYWORDS_O " OR "
-#define METADATA_TABLE_GET_KEYWORDS_T ")) ; "
+                                    "WHERE path IN ("
+#define METADATA_TABLE_GET_KEYWORDS_A "SELECT DISTINCT path FROM " METADATA_TABLE " WHERE value LIKE '%%%q%%' "
+#define METADATA_TABLE_GET_KEYWORDS_O " INTERSECT " METADATA_TABLE_GET_KEYWORDS_A
+#define METADATA_TABLE_GET_KEYWORDS_T ") ; "
 #define METADATA_TABLE_GET_FILE_TAGS "SELECT field, value FROM metadata where path='%q';"
 
 #define TABLE_CHECK_QUERY "SELECT name FROM sqlite_master WHERE type='table' AND name='%q';"
@@ -296,9 +295,11 @@ _search_keywords (DinleDb *db, const gchar **keywords)
     gint i = 0;
     const gchar *key = keywords[i];
     while (key) {
-        gchar *eq = sqlite3_mprintf (METADATA_TABLE_GET_KEYWORDS_A, key);
-        if (i > 0)
-            g_string_append (query, METADATA_TABLE_GET_KEYWORDS_O);
+        gchar *eq;
+        if (i == 0)
+            eq = sqlite3_mprintf (METADATA_TABLE_GET_KEYWORDS_A, key);
+        else
+            eq = sqlite3_mprintf (METADATA_TABLE_GET_KEYWORDS_O, key);
         g_string_append (query, eq);
         sqlite3_free (eq);
 
