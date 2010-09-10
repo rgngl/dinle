@@ -38,6 +38,8 @@ G_DEFINE_TYPE (DinleSessionManager, dinle_session_manager, G_TYPE_OBJECT)
     GSocketFamily dinle_socket_family = G_SOCKET_FAMILY_IPV4;
 #endif
 
+#define SESSION_TIMEOUT_SECS (60)
+
 struct _DinleSessionManagerPrivate
 {
     GSocketService *service;
@@ -53,6 +55,8 @@ static gboolean _connection_received(GThreadedSocketService *service, GSocketCon
                                      GObject *source_object, gpointer user_data);
 static DinleSessionManager* dinle_session_manager_new (void);
 static void _session_done (DinleSession *session, gpointer user_data);
+static void _session_activity (DinleSession *session, gpointer user_data);
+static gboolean _session_timeout (gpointer user_data);
 
 DinleSessionManager *
 dinle_session_manager_get (void)
@@ -132,9 +136,9 @@ dinle_session_manager_init (DinleSessionManager *self)
     self->priv->address = g_inet_address_new_any (dinle_socket_family);
     self->priv->socket_address = g_inet_socket_address_new (self->priv->address,
                                                             (guint16)dinle_server_port);
-    gboolean success = g_socket_listener_add_address(G_SOCKET_LISTENER(self->priv->service),
-                                                     self->priv->socket_address, G_SOCKET_TYPE_STREAM,
-                                                     G_SOCKET_PROTOCOL_TCP, NULL, NULL, &err);
+    gboolean success = g_socket_listener_add_address (G_SOCKET_LISTENER (self->priv->service),
+                                                      self->priv->socket_address, G_SOCKET_TYPE_STREAM,
+                                                      G_SOCKET_PROTOCOL_TCP, NULL, NULL, &err);
 
     if (!success || !dinle_server_port) {
         g_print ("cannot bind on port, aborting. %s\n", err->message);
@@ -167,7 +171,9 @@ _connection_received (GThreadedSocketService *service,
 
     DinleSession *ns = dinle_session_new (connection);
     g_signal_connect (ns, "done", G_CALLBACK (_session_done), self);
-    g_hash_table_insert (priv->sessions, ns, connection);
+    g_signal_connect (ns, "activity", G_CALLBACK (_session_activity), self);
+    guint to = g_timeout_add_seconds (SESSION_TIMEOUT_SECS, _session_timeout, ns);
+    g_hash_table_insert (priv->sessions, ns, GUINT_TO_POINTER (to));
 
     return TRUE;
 }
@@ -182,6 +188,31 @@ static void _session_done
     g_return_if_fail (DINLE_IS_SESSION (session));
 
     g_object_unref (session);
+    guint to = GPOINTER_TO_UINT (g_hash_table_lookup (priv->sessions, (gconstpointer) session));
+    g_source_remove (to);
     g_hash_table_remove (priv->sessions, (gconstpointer) session);
     g_print ("session destroyed.\n");
+}
+
+static void _session_activity (DinleSession *session, gpointer user_data)
+{
+    DinleSessionManager *self = DINLE_SESSION_MANAGER (user_data);
+    g_return_if_fail (DINLE_IS_SESSION_MANAGER (self));
+    DinleSessionManagerPrivate *priv = SESSION_MANAGER_PRIVATE (self);
+
+    g_return_if_fail (DINLE_IS_SESSION (session));
+    guint to = GPOINTER_TO_UINT (g_hash_table_lookup (priv->sessions, (gconstpointer) session));
+    g_source_remove (to);
+    to = g_timeout_add_seconds (SESSION_TIMEOUT_SECS, _session_timeout, session);
+    g_hash_table_insert (priv->sessions, session, GUINT_TO_POINTER (to));
+}
+
+static gboolean _session_timeout (gpointer user_data)
+{
+    DinleSession *session = DINLE_SESSION (user_data);
+    g_return_val_if_fail (DINLE_IS_SESSION (session), FALSE);
+
+    dinle_session_close (session);
+
+    return FALSE;
 }

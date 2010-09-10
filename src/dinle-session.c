@@ -45,10 +45,12 @@ struct _DinleSessionPrivate
     GIOChannel *channel;
     DinleSessionHandler *handler;
     DinleSessionState state;
+    guint io_source;
 };
 
 typedef enum {
     DONE_SIGNAL,
+    ACTIVITY_SIGNAL,
 
     NUM_SIGNALS
 } DinleSessionSignals;
@@ -65,6 +67,7 @@ static void _handle_ready_done (DinleSessionHandler *handler,
                               gboolean success, gpointer user_data);
 static void _handler_reply (DinleSessionHandler *handler,
                             const gchar *reply, gpointer user_data);
+static void _clean_session (DinleSession *self);
 
 static void
 dinle_session_get_property (GObject    *object,
@@ -103,20 +106,8 @@ dinle_session_finalize (GObject *object)
 {
     g_return_if_fail (DINLE_IS_SESSION (object));
     DinleSessionPrivate *priv = SESSION_PRIVATE (object);
-    if (priv->conn) {
-        g_object_unref (priv->conn);
-        priv->conn = NULL;
-    }
 
-    if (priv->channel) {
-        g_io_channel_unref (priv->channel);
-        priv->channel = NULL;
-    }
-
-    if (priv->handler) {
-        g_object_unref (priv->handler);
-        priv->handler = NULL;
-    }
+    _clean_session (DINLE_SESSION (object));
 
     G_OBJECT_CLASS (dinle_session_parent_class)->finalize (object);
 }
@@ -142,6 +133,14 @@ dinle_session_class_init (DinleSessionClass *klass)
                 g_cclosure_marshal_VOID__VOID,
                 G_TYPE_NONE, 0);
 
+    signals[ACTIVITY_SIGNAL] =
+        g_signal_new ("activity",
+                G_TYPE_FROM_CLASS (klass),
+                G_SIGNAL_RUN_FIRST,
+                G_STRUCT_OFFSET (DinleSessionClass, activity),
+                NULL, NULL,
+                g_cclosure_marshal_VOID__VOID,
+                G_TYPE_NONE, 0);
 }
 
 static void
@@ -159,6 +158,7 @@ dinle_session_init (DinleSession *self)
 
     self->priv->conn = NULL;
     self->priv->channel = NULL;
+    self->priv->io_source = 0;
 }
 
 static void
@@ -186,7 +186,7 @@ _init (DinleSession *self, GSocketConnection *conn)
     g_io_channel_write_chars (priv->channel, DINLE_TAG_SERVER "\n",
                               -1, &written, &error);
     g_io_channel_flush (priv->channel, &error);
-    g_io_add_watch (priv->channel, G_IO_IN, (GIOFunc) _network_read, self);
+    priv->io_source = g_io_add_watch (priv->channel, G_IO_IN, (GIOFunc) _network_read, self);
 }
 
 static gboolean
@@ -221,8 +221,7 @@ _network_read (GIOChannel *source,
         g_io_channel_write_chars (source, "<error>Protocol error.</error>",
                 -1, &len, &error);
         g_io_channel_flush (source, &error);
-        g_signal_emit_by_name (self, "done");
-        /*dinle_session_close (self);*/
+        dinle_session_close (self);
         return FALSE;
     }
 
@@ -230,6 +229,8 @@ _network_read (GIOChannel *source,
         g_error_free (error);
         error = NULL;
     }
+
+    g_signal_emit_by_name (self, "activity");
 
     return TRUE;
 }
@@ -267,7 +268,6 @@ _handle_auth_done (DinleSessionHandler *handler, gboolean success, gpointer user
                                   -1, (gsize*)&len, &error);
         g_io_channel_flush (priv->channel, &error);
         dinle_session_close (self);
-        g_signal_emit_by_name (self, "done");
     }
 }
 
@@ -297,7 +297,6 @@ _handle_new_done (DinleSessionHandler *handler,
                                   -1, (gsize*)&len, &error);
         g_io_channel_flush (priv->channel, &error);
         dinle_session_close (self);
-        g_signal_emit_by_name (self, "done");
     }
 }
 
@@ -317,6 +316,31 @@ _handler_reply (DinleSessionHandler *handler,
     g_io_channel_flush (priv->channel, &error);
 }
 
+static void
+_clean_session (DinleSession *self)
+{
+    g_return_if_fail (DINLE_IS_SESSION (self));
+    DinleSessionPrivate *priv = SESSION_PRIVATE (self);
+
+    if (priv->conn) {
+        g_object_unref (priv->conn);
+        priv->conn = NULL;
+    }
+
+    if (priv->channel) {
+        if (!g_source_remove (priv->io_source))
+            g_print ("oi..\n");;
+        g_io_channel_unref (priv->channel);
+        priv->channel = NULL;
+    }
+
+    if (priv->handler) {
+        g_object_unref (priv->handler);
+        priv->handler = NULL;
+    }
+
+}
+
 DinleSession *
 dinle_session_new (GSocketConnection *conn)
 {
@@ -332,15 +356,7 @@ dinle_session_close (DinleSession *self)
     g_return_val_if_fail (DINLE_IS_SESSION (self), FALSE);
     DinleSessionPrivate *priv = SESSION_PRIVATE (self);
 
-    if (priv->conn) {
-        g_object_unref (priv->conn);
-        priv->conn = NULL;
-    }
-
-    if (priv->channel) {
-        g_io_channel_unref (priv->channel);
-        priv->channel = NULL;
-    }
+    _clean_session (self);
 
     g_signal_emit_by_name (self, "done");
 

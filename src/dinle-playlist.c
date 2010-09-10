@@ -180,7 +180,7 @@ dinle_playlist_client_reply (DinlePlaylist *playlist)
         }
         g_strfreev (fvlist);
 
-        g_string_append (filetag, DINLE_TAG_END (DINLE_REPLY_TRACK)"\n");
+        g_string_append (filetag, "\n"DINLE_TAG_END (DINLE_REPLY_TRACK)"\n");
         g_string_append (str, filetag->str);
         g_string_free (filetag, TRUE);
 

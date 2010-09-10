@@ -64,6 +64,7 @@ struct _DinleSessionClass
 
     /* Signals */
     void (*done) (DinleSession *self, gpointer user_data);
+    void (*activity) (DinleSession *self, gpointer user_data);
 };
 
 GType dinle_session_get_type (void) G_GNUC_CONST;
