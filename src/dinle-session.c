@@ -181,7 +181,7 @@ _init (DinleSession *self, GSocketConnection *conn)
 
     gint fd = g_socket_get_fd (socket);
     priv->channel = g_io_channel_unix_new (fd);
-    g_io_channel_set_encoding (priv->channel, NULL, &error);
+    g_io_channel_set_encoding (priv->channel, "UTF-8", &error);
     gsize written = 0;
     g_io_channel_write_chars (priv->channel, DINLE_TAG_SERVER "\n",
                               -1, &written, &error);
