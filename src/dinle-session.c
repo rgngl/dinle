@@ -30,6 +30,7 @@ G_DEFINE_TYPE (DinleSession, dinle_session, G_TYPE_OBJECT)
   (G_TYPE_INSTANCE_GET_PRIVATE ((o), DINLE_TYPE_SESSION, DinleSessionPrivate))
 
 #define BUF_LEN (1024*16)
+#define WRITE_BUF_LEN (1024)
 
 typedef enum {
     DINLE_SESSION_STATE_UNKNOWN,
@@ -45,7 +46,9 @@ struct _DinleSessionPrivate
     GIOChannel *channel;
     DinleSessionHandler *handler;
     DinleSessionState state;
-    guint io_source;
+    guint r_io_source;
+    guint w_io_source;
+    GString *write_buf;
 };
 
 typedef enum {
@@ -57,7 +60,8 @@ typedef enum {
 static guint signals[NUM_SIGNALS] = {0};
 
 static void _init (DinleSession *self, GSocketConnection *conn);
-static gboolean _network_read(GIOChannel *source, GIOCondition cond, gpointer data);
+static gboolean _network_read (GIOChannel *source, GIOCondition cond, gpointer data);
+static gboolean _network_write (GIOChannel *source, GIOCondition cond, gpointer data);
 
 static void _handle_auth_done (DinleSessionHandler *handler,
                                gboolean success, gpointer user_data);
@@ -108,6 +112,7 @@ dinle_session_finalize (GObject *object)
     DinleSessionPrivate *priv = SESSION_PRIVATE (object);
 
     _clean_session (DINLE_SESSION (object));
+    g_string_free (priv->write_buf, TRUE);
 
     G_OBJECT_CLASS (dinle_session_parent_class)->finalize (object);
 }
@@ -158,7 +163,9 @@ dinle_session_init (DinleSession *self)
 
     self->priv->conn = NULL;
     self->priv->channel = NULL;
-    self->priv->io_source = 0;
+    self->priv->r_io_source = 0;
+    self->priv->w_io_source = 0;
+    self->priv->write_buf = g_string_new ("");
 }
 
 static void
@@ -186,7 +193,7 @@ _init (DinleSession *self, GSocketConnection *conn)
     g_io_channel_write_chars (priv->channel, DINLE_TAG_SERVER "\n",
                               -1, &written, &error);
     g_io_channel_flush (priv->channel, &error);
-    priv->io_source = g_io_add_watch (priv->channel, G_IO_IN, (GIOFunc) _network_read, self);
+    priv->r_io_source = g_io_add_watch (priv->channel, G_IO_IN, (GIOFunc) _network_read, self);
 }
 
 static gboolean
@@ -231,6 +238,33 @@ _network_read (GIOChannel *source,
     }
 
     g_signal_emit_by_name (self, "activity");
+
+    return TRUE;
+}
+
+static gboolean
+_network_write (GIOChannel *source,
+                GIOCondition cond,
+                gpointer data)
+{
+    DinleSession *self = DINLE_SESSION (data);
+    g_return_val_if_fail (DINLE_IS_SESSION (self), FALSE);
+    DinleSessionPrivate *priv = SESSION_PRIVATE (self);
+
+    gsize len;
+    GError *error = NULL;
+
+    if (!priv->write_buf->len) {
+        priv->w_io_source = 0;
+        return FALSE;
+    }
+
+    g_io_channel_write_chars (priv->channel, priv->write_buf->str,
+                              MIN (priv->write_buf->len, WRITE_BUF_LEN),
+                              &len, &error);
+    g_string_erase (priv->write_buf, 0, len);
+
+    g_io_channel_flush (priv->channel, &error);
 
     return TRUE;
 }
@@ -309,11 +343,11 @@ _handler_reply (DinleSessionHandler *handler,
     g_return_if_fail (DINLE_IS_SESSION (self));
     DinleSessionPrivate *priv = SESSION_PRIVATE (self);
 
-    guint len;
-    GError *error = NULL;
-
-    g_io_channel_write_chars (priv->channel, reply, -1, (gsize*)&len, &error);
-    g_io_channel_flush (priv->channel, &error);
+    g_string_append (priv->write_buf, reply);
+    if (!priv->w_io_source)
+        priv->w_io_source = g_io_add_watch (priv->channel,
+                                            G_IO_IN, (GIOFunc)
+                                            _network_write, self);
 }
 
 static void
@@ -328,8 +362,10 @@ _clean_session (DinleSession *self)
     }
 
     if (priv->channel) {
-        if (!g_source_remove (priv->io_source))
-            g_print ("oi..\n");;
+        if (!g_source_remove (priv->r_io_source))
+            g_print ("oi..\n");
+        if (!g_source_remove (priv->w_io_source))
+            g_print ("oi..\n");
         g_io_channel_unref (priv->channel);
         priv->channel = NULL;
     }
