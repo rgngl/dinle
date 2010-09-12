@@ -262,9 +262,19 @@ _network_write (GIOChannel *source,
     g_io_channel_write_chars (priv->channel, priv->write_buf->str,
                               MIN (priv->write_buf->len, WRITE_BUF_LEN),
                               &len, &error);
+    if (error) {
+        g_print ("io channel write errow: %s\n", error->message);
+        g_error_free (error);
+        error = NULL;
+    }
     g_string_erase (priv->write_buf, 0, len);
 
     g_io_channel_flush (priv->channel, &error);
+    if (error) {
+        g_print ("io channel flush error: %s\n", error->message);
+        g_error_free (error);
+        error = NULL;
+    }
 
     return TRUE;
 }
