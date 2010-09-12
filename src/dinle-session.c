@@ -362,9 +362,9 @@ _clean_session (DinleSession *self)
     }
 
     if (priv->channel) {
-        if (!g_source_remove (priv->r_io_source))
+        if (priv->r_io_source && !g_source_remove (priv->r_io_source))
             g_print ("oi..\n");
-        if (!g_source_remove (priv->w_io_source))
+        if (priv->w_io_source && !g_source_remove (priv->w_io_source))
             g_print ("oi..\n");
         g_io_channel_unref (priv->channel);
         priv->channel = NULL;
