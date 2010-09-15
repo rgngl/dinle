@@ -173,7 +173,8 @@ dinle_playlist_client_reply (DinlePlaylist *playlist)
         gchar **fvlist = dinle_media_metadata_get_field_value_list (md);
         gchar **fviter = fvlist;
         while (fviter && *fviter) {
-            esc = g_markup_printf_escaped (DINLE_TAG_ALONE (DINLE_REPLY_TAG, "%s='%s'"), *fviter, *(fviter+1));
+            esc = g_markup_printf_escaped (DINLE_TAG_ALONE (DINLE_REPLY_TAG, "field='%s' value='%s'"),
+                                           *fviter, *(fviter+1));
             g_string_append (filetag, esc);
             g_free (esc);
             fviter+=2;
