@@ -42,6 +42,7 @@ struct _DinleSessionHandlerAuthPrivate
 
 
 static gboolean _process (DinleSessionHandler *handler, gchar *data, gsize len);
+static void _start (DinleSessionHandler *handler);
 
 static void _start_element (GMarkupParseContext *context,
                             const gchar *element_name,
@@ -151,6 +152,15 @@ _process (DinleSessionHandler *handler, gchar *data, gsize len)
             return FALSE;
     }
     return TRUE;
+}
+
+static void
+_start (DinleSessionHandler *handler)
+{
+    g_return_if_fail (DINLE_IS_SESSION_HANDLER_AUTH (handler));
+    DinleSessionHandlerAuthPrivate *priv = SESSION_HANDLER_AUTH_PRIVATE (handler);
+
+    g_signal_emit_by_name (handler, "reply", DINLE_TAG_ALONE (DINLE_REPLY_AUTHSTART, ""));
 }
 
 static gboolean

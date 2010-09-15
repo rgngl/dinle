@@ -62,6 +62,7 @@ struct _DinleSessionHandlerClass
     GObjectClass parent_class;
 
     gboolean (*process) (DinleSessionHandler *self, gchar *data, gsize len);
+    void (*start) (DinleSessionHandler *self);
 
     /* Signals */
     void (*done) (DinleSessionHandler *self, gboolean success, gpointer user_data);
@@ -72,6 +73,7 @@ GType dinle_session_handler_get_type (void) G_GNUC_CONST;
 
 gboolean dinle_session_handler_process (DinleSessionHandler *self,
                                         gchar *data, gsize len);
+void dinle_session_handler_start (DinleSessionHandler *self);
 
 G_END_DECLS
 

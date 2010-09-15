@@ -33,6 +33,7 @@ struct _DinleSessionHandlerNewPrivate
 
 
 static gboolean _process (DinleSessionHandler *handler, gchar *data, gsize len);
+static void _start (DinleSessionHandler *handler);
 
 static void
 dinle_session_handler_new_get_property (GObject    *object,
@@ -88,6 +89,7 @@ dinle_session_handler_new_class_init (DinleSessionHandlerNewClass *klass)
     object_class->dispose = dinle_session_handler_new_dispose;
     object_class->finalize = dinle_session_handler_new_finalize;
     parent_class->process = _process;
+    parent_class->start = _start;
 }
 
 static void
@@ -110,6 +112,15 @@ _process (DinleSessionHandler *handler, gchar *data, gsize len)
     g_signal_emit_by_name (handler, "done", TRUE);
 
     return TRUE;
+}
+
+static void
+_start (DinleSessionHandler *handler)
+{
+    g_return_if_fail (DINLE_IS_SESSION_HANDLER_NEW (handler));
+    DinleSessionHandlerNewPrivate *priv = SESSION_HANDLER_NEW_PRIVATE (handler);
+
+    g_signal_emit_by_name (handler, "reply", DINLE_TAG_SERVER);
 }
 
 DinleSessionHandler *

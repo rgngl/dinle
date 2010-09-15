@@ -159,6 +159,7 @@ dinle_session_init (DinleSession *self)
                       G_CALLBACK (_handle_new_done), self);
     g_signal_connect (self->priv->handler, "reply",
                       G_CALLBACK (_handler_reply), self);
+    g_print ("handler created\n");
 
     self->priv->conn = NULL;
     self->priv->channel = NULL;
@@ -188,16 +189,13 @@ _init (DinleSession *self, GSocketConnection *conn)
     gint fd = g_socket_get_fd (socket);
     priv->channel = g_io_channel_unix_new (fd);
     g_io_channel_set_encoding (priv->channel, "UTF-8", &error);
-    gsize written = 0;
     if (g_io_channel_get_buffered (priv->channel)) {
         g_print ("io channel is buffered, %d bytes\n", g_io_channel_get_buffer_size (priv->channel));
     }
-    g_io_channel_write_chars (priv->channel, DINLE_TAG_SERVER "\n",
-                              -1, &written, &error);
-    g_io_channel_flush (priv->channel, &error);
     priv->r_io_source = g_io_add_watch (priv->channel, G_IO_IN, (GIOFunc) _network_read, self);
     priv->w_io_source = g_io_add_watch (priv->channel, G_IO_IN, (GIOFunc) _network_write, self);
-    g_io_channel_flush (priv->channel, NULL);
+    dinle_session_handler_start (priv->handler);
+    _network_write (priv->channel, G_IO_IN, (gpointer)self);
 }
 
 static gboolean
@@ -319,6 +317,7 @@ _handle_auth_done (DinleSessionHandler *handler, gboolean success, gpointer user
                           "done", G_CALLBACK (_handle_ready_done), self);
         g_signal_connect (priv->handler, "reply",
                           G_CALLBACK (_handler_reply), self);
+        dinle_session_handler_start (priv->handler);
     } else {
         g_io_channel_write_chars (priv->channel,
                                   DINLE_TAG_ERROR ("Failed parsing message"),
@@ -348,6 +347,7 @@ _handle_new_done (DinleSessionHandler *handler,
                           "done", G_CALLBACK (_handle_auth_done), self);
         g_signal_connect (priv->handler, "reply",
                           G_CALLBACK (_handler_reply), self);
+        dinle_session_handler_start (priv->handler);
     } else {
         g_io_channel_write_chars (priv->channel,
                                   DINLE_TAG_ERROR ("Protocol error."),

@@ -77,6 +77,11 @@ dinle_session_handler_finalize (GObject *object)
 }
 
 static void
+_start (DinleSessionHandler *self)
+{
+}
+
+static void
 dinle_session_handler_class_init (DinleSessionHandlerClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
@@ -87,7 +92,8 @@ dinle_session_handler_class_init (DinleSessionHandlerClass *klass)
     object_class->set_property = dinle_session_handler_set_property;
     object_class->dispose = dinle_session_handler_dispose;
     object_class->finalize = dinle_session_handler_finalize;
-    klass->process = dinle_session_handler_process;
+    klass->process = NULL;
+    klass->start = _start;
 
     signals[DONE_SIGNAL] =
         g_signal_new ("done",
@@ -125,4 +131,14 @@ dinle_session_handler_process (DinleSessionHandler *self, gchar *data, gsize len
     else g_critical ("Pure virtual function process called...\n");
 
     return ret;
+}
+
+void
+dinle_session_handler_start (DinleSessionHandler *self)
+{
+    g_return_if_fail (DINLE_IS_SESSION_HANDLER (self));
+
+    if (DINLE_SESSION_HANDLER_GET_CLASS (self)->start)
+        DINLE_SESSION_HANDLER_GET_CLASS (self)->start (self);
+    else g_critical ("Pure virtual function start called...\n");
 }
