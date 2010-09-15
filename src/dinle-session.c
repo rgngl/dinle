@@ -195,7 +195,6 @@ _init (DinleSession *self, GSocketConnection *conn)
     priv->r_io_source = g_io_add_watch (priv->channel, G_IO_IN, (GIOFunc) _network_read, self);
     priv->w_io_source = g_io_add_watch (priv->channel, G_IO_IN, (GIOFunc) _network_write, self);
     dinle_session_handler_start (priv->handler);
-    _network_write (priv->channel, G_IO_IN, (gpointer)self);
 }
 
 static gboolean
@@ -264,7 +263,7 @@ _network_write (GIOChannel *source,
 
     GError *error = NULL;
 
-    g_print ("network write...\n");
+    g_print ("network write... buf: %s\n", priv->write_buf->str);
 
     gsize write_buf_size = g_io_channel_get_buffer_size (priv->channel);
 
@@ -348,6 +347,7 @@ _handle_new_done (DinleSessionHandler *handler,
         g_signal_connect (priv->handler, "reply",
                           G_CALLBACK (_handler_reply), self);
         dinle_session_handler_start (priv->handler);
+        g_io_channel_flush (priv->channel, NULL);
     } else {
         g_io_channel_write_chars (priv->channel,
                                   DINLE_TAG_ERROR ("Protocol error."),
@@ -367,12 +367,14 @@ _handler_reply (DinleSessionHandler *handler,
     DinleSessionPrivate *priv = SESSION_PRIVATE (self);
 
     g_string_append (priv->write_buf, reply);
+    _network_write (priv->channel, G_IO_IN, (gpointer)self);
     if (!priv->w_io_source)
         priv->w_io_source = g_io_add_watch (priv->channel,
                                             G_IO_IN,
                                             (GIOFunc) _network_write,
                                             self);
     /*g_print ("reply: %s\n", priv->write_buf->str);*/
+    g_print ("reply: %s\n", reply);
 }
 
 static void

@@ -118,6 +118,7 @@ dinle_session_handler_auth_class_init (DinleSessionHandlerAuthClass *klass)
     object_class->dispose = dinle_session_handler_auth_dispose;
     object_class->finalize = dinle_session_handler_auth_finalize;
     parent_class->process = _process;
+    parent_class->start = _start;
 }
 
 static void
