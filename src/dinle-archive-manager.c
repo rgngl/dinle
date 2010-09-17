@@ -271,10 +271,9 @@ _get_from_db_cb (const gchar *file, gpointer data)
 
     DinleMediaFile *mf = dinle_db_get_file_by_name (priv->db, file);
     DinleMediaFile *mf2 = dinle_media_file_new (file);
-    if (dinle_media_file_get_size (mf) == dinle_media_file_get_size (mf2)) {
-        /* if the file size haven't changed, do nothing. */
-        /*g_print ("size of the file matches the one in the database.\n");*/
-    } else {
+    /* Check if file size is changed first, if not then check the hash */
+    if (dinle_media_file_get_size (mf) != dinle_media_file_get_size (mf2) ||
+        g_strcmp0 (dinle_media_file_get_hash (mf), dinle_media_file_get_hash (mf2))) {
         dinle_db_remove_file (priv->db, dinle_media_file_get_path (mf));
         dinle_db_add_file (priv->db, mf2);
     }
