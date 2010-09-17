@@ -263,7 +263,7 @@ _network_write (GIOChannel *source,
 
     GError *error = NULL;
 
-    g_print ("network write... buf: %s\n", priv->write_buf->str);
+    /*g_print ("network write... buf: %s\n", priv->write_buf->str);*/
 
     gsize write_buf_size = g_io_channel_get_buffer_size (priv->channel);
 
@@ -374,7 +374,7 @@ _handler_reply (DinleSessionHandler *handler,
                                             (GIOFunc) _network_write,
                                             self);
     /*g_print ("reply: %s\n", priv->write_buf->str);*/
-    g_print ("reply: %s\n", reply);
+    /*g_print ("reply: %s\n", reply);*/
 }
 
 static void
