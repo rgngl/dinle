@@ -6,7 +6,7 @@ AM_CPPFLAGS = -I$(srcdir)/src
 common_headers = common/dinle-tags.h \
 		 common/dinle-commands.h
 
-SUBDIRS = src lib
+SUBDIRS = src
 DIST_SUBDIRS = $(SUBDIRS)
 
 #
