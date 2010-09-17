@@ -270,8 +270,8 @@ _get_file_by_name (DinleDb *db, const gchar *name)
     if (rows >= 1) {
         /*g_print ("%s %s %s\n", table[cols], table[cols+1], table[cols+2]);*/
         mf = dinle_media_file_new (table[cols]);
-        /*dinle_media_file_set_with_hash_size (mf, table[cols], table[cols+2],*/
-                /*g_ascii_strtoll(table[cols+1], NULL, 10));*/
+        dinle_media_file_set_hash_size (mf, table[cols+2],
+                                        g_ascii_strtoll(table[cols+1], NULL, 10));
     }
 
     sqlite3_free_table (table);
@@ -324,7 +324,8 @@ _search_keywords (DinleDb *db, const gchar **keywords)
         for (i = cols; i <= rows*cols; i+=cols) {
             list[index] = dinle_media_file_new (table[i]);
             if (list[index])
-                dinle_media_file_set_hash_size (list[index], table[i+1], table[i+2]);
+                dinle_media_file_set_hash_size (list[index], table[i+1],
+                                                g_ascii_strtoll(table[i+2], NULL, 10));
             index++;
         }
     }
@@ -392,7 +393,8 @@ _search_by_tags (DinleDb *db, const gchar **pairs)
         for (i = cols; i <= rows*cols; i+=cols) {
             list[index] = dinle_media_file_new (table[i]);
             if (list[index])
-                dinle_media_file_set_hash_size (list[index], table[i+1], table[i+2]);
+                dinle_media_file_set_hash_size (list[index], table[i+1],
+                                                g_ascii_strtoll(table[i+2], NULL, 10));
             index++;
         }
     }
