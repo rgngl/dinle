@@ -33,6 +33,7 @@
 #define DINLE_REPLY_CLIENTOK "client-ok"
 #define DINLE_REPLY_AUTHOK "auth-ok"
 #define DINLE_REPLY_AUTHSTART "auth-start"
+#define DINLE_REPLY_READYSTART "ready-start"
 #define DINLE_REPLY_SEARCHRESULT "search-result"
 #define DINLE_REPLY_TRACK "track"
 #define DINLE_REPLY_TAG "tag"
