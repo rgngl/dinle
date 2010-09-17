@@ -36,6 +36,7 @@ G_DEFINE_TYPE (DinleMediaFile, dinle_media_file, G_TYPE_OBJECT)
 
 
 #define HASH_BUF_SIZE (1024*1024)
+#define HASH_READ_SIZE (1024*100)
 
 struct _DinleMediaFilePrivate
 {
@@ -290,6 +291,7 @@ dinle_media_file_get_hash (DinleMediaFile *self)
     GChecksum *cs = NULL;
     FILE *input = NULL;
     gsize size = 0;
+    gsize readsize = 0;
     const gchar *sum;
 
     g_return_val_if_fail (DINLE_IS_MEDIA_FILE (self), NULL);
@@ -300,12 +302,14 @@ dinle_media_file_get_hash (DinleMediaFile *self)
 
     g_return_val_if_fail (priv->file, NULL);
 
+    /* Hash is calculated for only the first 100kb of the files, to speed up
+     * the process */
     cs = g_checksum_new (G_CHECKSUM_MD5);
     input = fopen (priv->file, "rb");
     do {
         size = fread( (void *)data, sizeof( guchar ), HASH_BUF_SIZE, input );
         g_checksum_update( cs, data, size );
-    } while (size == HASH_BUF_SIZE);
+    } while (size == HASH_BUF_SIZE && readsize < HASH_READ_SIZE);
     fclose (input);
     sum = g_checksum_get_string (cs);
     priv->hash = g_strdup (sum);
