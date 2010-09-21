@@ -278,6 +278,8 @@ _end_element (GMarkupParseContext *context, const gchar *element_name,
                 tag_pairs[index++] = g_slist_nth_data (priv->search_values, i);
             }
 
+            g_signal_emit_by_name (self, "reply", DINLE_TAG_ALONE (DINLE_REPLY_SEARCHOK, ""));
+
             DinlePlaylist *pl = dinle_archive_manager_search_tags (tag_pairs);
             gchar *reply = dinle_playlist_client_reply (pl);
             if (reply)
@@ -303,6 +305,8 @@ _end_element (GMarkupParseContext *context, const gchar *element_name,
             gchar *s = g_strstrip (priv->search_free);
 
             gchar **keywords = g_strsplit_set (s, " \n\t\r", 0);
+
+            g_signal_emit_by_name (self, "reply", DINLE_TAG_ALONE (DINLE_REPLY_SEARCHOK, ""));
 
             DinlePlaylist *pl = dinle_archive_manager_search_keywords (keywords);
             if (pl) {

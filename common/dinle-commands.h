@@ -35,6 +35,7 @@
 #define DINLE_REPLY_AUTHSTART "auth-start"
 #define DINLE_REPLY_READYSTART "ready-start"
 #define DINLE_REPLY_SEARCHRESULT "search-result"
+#define DINLE_REPLY_SEARCHOK "search-ok"
 #define DINLE_REPLY_TRACK "track"
 #define DINLE_REPLY_TAG "tag"
 #define DINLE_REPLY_ERROR "error"
