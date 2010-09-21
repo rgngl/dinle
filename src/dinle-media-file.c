@@ -36,7 +36,7 @@ G_DEFINE_TYPE (DinleMediaFile, dinle_media_file, G_TYPE_OBJECT)
 
 
 #define HASH_BUF_SIZE (1024*1024)
-#define HASH_READ_SIZE (1024*100)
+#define HASH_READ_SIZE (1024*5)
 
 struct _DinleMediaFilePrivate
 {
@@ -309,6 +309,7 @@ dinle_media_file_get_hash (DinleMediaFile *self)
     do {
         size = fread( (void *)data, sizeof( guchar ), HASH_BUF_SIZE, input );
         g_checksum_update( cs, data, size );
+        readsize += size;
     } while (size == HASH_BUF_SIZE && readsize < HASH_READ_SIZE);
     fclose (input);
     sum = g_checksum_get_string (cs);
