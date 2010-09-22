@@ -44,7 +44,9 @@ typedef void (*_traverse_callback) (const gchar* file, gpointer data);
 
 static void _initialize (void);
 static void _build_database (void);
+static void _build_database_real (void);
 static void _update_database (void);
+static void _update_database_real (void);
 static void _traverse_directory (const gchar *path,  _traverse_callback cb, gpointer userdata);
 static void _traverse_cb (const gchar *file, gpointer data);
 static void _count_files_cb (const gchar *file, gpointer data);
@@ -151,6 +153,12 @@ _initialize (void)
 static void
 _build_database (void)
 {
+    g_thread_create ((GThreadFunc)_build_database_real, NULL, FALSE, NULL);
+}
+
+static void
+_build_database_real (void)
+{
     g_return_if_fail (DINLE_IS_ARCHIVE_MANAGER (instance));
     DinleArchiveManagerPrivate *priv = ARCHIVE_MANAGER_PRIVATE (instance);
     DinleConfigManager *cm = dinle_config_manager_get ();
@@ -163,11 +171,16 @@ _build_database (void)
     guint scanned = 0;
     _traverse_directory (media_root, _traverse_cb, &scanned);
     g_value_unset (&media_root_prop);
-
 }
 
 static void
 _update_database (void)
+{
+    g_thread_create ((GThreadFunc)_update_database_real, NULL, FALSE, NULL);
+}
+
+static void
+_update_database_real (void)
 {
     g_return_if_fail (DINLE_IS_ARCHIVE_MANAGER (instance));
     DinleArchiveManagerPrivate *priv = ARCHIVE_MANAGER_PRIVATE (instance);

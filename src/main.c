@@ -112,12 +112,12 @@ int main(int argc, char** argv)
         abort();
     }
 
+    g_object_ref (dinle_session_manager_get ());
+
     g_object_ref (dinle_archive_manager_get ());
 
     if (music_root)
         fprintf(stderr, "%s\n", music_root);
-
-    g_object_ref (dinle_session_manager_get ());
 
     g_main_loop_run(main_loop);
 
