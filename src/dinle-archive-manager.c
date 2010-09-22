@@ -53,6 +53,8 @@ static void _count_files_cb (const gchar *file, gpointer data);
 static void _get_from_db_cb (const gchar *file, gpointer data);
 static void _add_new_files_cb (const gchar *file, gpointer data);
 
+G_LOCK_DEFINE (db_update_lock);
+
 static void
 dinle_archive_manager_get_property (GObject    *object,
                                     guint       property_id,
@@ -163,6 +165,9 @@ _build_database_real (void)
     DinleArchiveManagerPrivate *priv = ARCHIVE_MANAGER_PRIVATE (instance);
     DinleConfigManager *cm = dinle_config_manager_get ();
 
+    if (!G_TRYLOCK (db_update_lock))
+        return;
+
     GValue media_root_prop = {0,};
     g_value_init (&media_root_prop, G_TYPE_STRING);
     g_object_get_property (G_OBJECT (cm), "media-root", &media_root_prop);
@@ -171,6 +176,8 @@ _build_database_real (void)
     guint scanned = 0;
     _traverse_directory (media_root, _traverse_cb, &scanned);
     g_value_unset (&media_root_prop);
+
+    G_UNLOCK (db_update_lock);
 }
 
 static void
@@ -185,6 +192,9 @@ _update_database_real (void)
     g_return_if_fail (DINLE_IS_ARCHIVE_MANAGER (instance));
     DinleArchiveManagerPrivate *priv = ARCHIVE_MANAGER_PRIVATE (instance);
     DinleConfigManager *cm = dinle_config_manager_get ();
+
+    if (!G_TRYLOCK (db_update_lock))
+        return;;
 
     GValue media_root_prop = {0,};
     g_value_init (&media_root_prop, G_TYPE_STRING);
@@ -214,6 +224,8 @@ _update_database_real (void)
     g_print ("finished updating db.\n");
 
     g_value_unset (&media_root_prop);
+
+    G_UNLOCK (db_update_lock);
 }
 
 static void
